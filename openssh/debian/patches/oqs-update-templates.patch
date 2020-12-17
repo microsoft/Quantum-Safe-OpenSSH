@@ -1,0 +1,280 @@
+This patch updates the OQS templates:
+
+1. Fix a bug where 'name' is in all-caps and causes the template application to be incorrect.
+
+2. Adds default key file paths for pq hybrid algorithms to ssh-keygen. Previously you had to explicitly supply the
+   file path with the -f parameter for the hybrid algorithms which is inconvenient.
+
+To update the files from the template, you have to execute: 'python3 oqs-template/generate.py'
+
+---
+ kex.c                                                 |    4 -
+ kex.h                                                 |    4 -
+ kexoqs.c                                              |    4 -
+ myproposal.h                                          |    4 -
+ oqs-template/generate.yml                             |    2 
+ oqs-template/ssh-keygen.c/assign_pq_id_paths.fragment |    6 +
+ oqs-test/test_openssh.py                              |    4 -
+ regress/unittests/kex/test_kex.c                      |    4 -
+ ssh-keygen.c                                          |   72 ++++++++++++++++++
+ 9 files changed, 91 insertions(+), 13 deletions(-)
+
+--- a/kex.c
++++ b/kex.c
+@@ -172,7 +172,7 @@
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P503_SHA384)
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P610_SHA384)
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P751_SHA384)
+-	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384__SHA384)
++	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P434_COMPRESSED_SHA384)
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P503_COMPRESSED_SHA384)
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P610_COMPRESSED_SHA384)
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_SIKE_P751_COMPRESSED_SHA384)
+@@ -268,7 +268,7 @@
+ 	PQ_OQS_KEX(KEX_SIKE_P503_SHA384)
+ 	PQ_OQS_KEX(KEX_SIKE_P610_SHA384)
+ 	PQ_OQS_KEX(KEX_SIKE_P751_SHA384)
+-	PQ_OQS_KEX(KEX__SHA384)
++	PQ_OQS_KEX(KEX_SIKE_P434_COMPRESSED_SHA384)
+ 	PQ_OQS_KEX(KEX_SIKE_P503_COMPRESSED_SHA384)
+ 	PQ_OQS_KEX(KEX_SIKE_P610_COMPRESSED_SHA384)
+ 	PQ_OQS_KEX(KEX_SIKE_P751_COMPRESSED_SHA384)
+--- a/kex.h
++++ b/kex.h
+@@ -118,7 +118,7 @@
+ #define KEX_SIKE_P503_SHA384 PQ_OQS_KEX_SUFFIX("sike-p503-sha384")
+ #define KEX_SIKE_P610_SHA384 PQ_OQS_KEX_SUFFIX("sike-p610-sha384")
+ #define KEX_SIKE_P751_SHA384 PQ_OQS_KEX_SUFFIX("sike-p751-sha384")
+-#define KEX__SHA384 PQ_OQS_KEX_SUFFIX("-sha384")
++#define KEX_SIKE_P434_COMPRESSED_SHA384 PQ_OQS_KEX_SUFFIX("sike-p434-compressed-sha384")
+ #define KEX_SIKE_P503_COMPRESSED_SHA384 PQ_OQS_KEX_SUFFIX("sike-p503-compressed-sha384")
+ #define KEX_SIKE_P610_COMPRESSED_SHA384 PQ_OQS_KEX_SUFFIX("sike-p610-compressed-sha384")
+ #define KEX_SIKE_P751_COMPRESSED_SHA384 PQ_OQS_KEX_SUFFIX("sike-p751-compressed-sha384")
+@@ -189,7 +189,7 @@
+ #define KEX_ECDH_NISTP384_SIKE_P503_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p503-sha384")
+ #define KEX_ECDH_NISTP384_SIKE_P610_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p610-sha384")
+ #define KEX_ECDH_NISTP384_SIKE_P751_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p751-sha384")
+-#define KEX_ECDH_NISTP384__SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384--sha384")
++#define KEX_ECDH_NISTP384_SIKE_P434_COMPRESSED_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p434-compressed-sha384")
+ #define KEX_ECDH_NISTP384_SIKE_P503_COMPRESSED_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p503-compressed-sha384")
+ #define KEX_ECDH_NISTP384_SIKE_P610_COMPRESSED_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p610-compressed-sha384")
+ #define KEX_ECDH_NISTP384_SIKE_P751_COMPRESSED_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p751-compressed-sha384")
+--- a/kexoqs.c
++++ b/kexoqs.c
+@@ -154,7 +154,7 @@
+ 	SSH2_MSG_HY_ECDH_SIKE_INIT, SSH2_MSG_HY_ECDH_SIKE_REPLY},
+ 	{HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p751-sha384"), OQS_KEM_alg_sike_p751,
+ 	SSH2_MSG_HY_ECDH_SIKE_INIT, SSH2_MSG_HY_ECDH_SIKE_REPLY},
+-	{HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384--sha384"), OQS_KEM_alg_sike_p434_compressed,
++	{HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p434-compressed-sha384"), OQS_KEM_alg_sike_p434_compressed,
+ 	SSH2_MSG_HY_ECDH_SIKE_INIT, SSH2_MSG_HY_ECDH_SIKE_REPLY},
+ 	{HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-sike-p503-compressed-sha384"), OQS_KEM_alg_sike_p503_compressed,
+ 	SSH2_MSG_HY_ECDH_SIKE_INIT, SSH2_MSG_HY_ECDH_SIKE_REPLY},
+@@ -309,7 +309,7 @@
+ 	SSH2_MSG_PQ_SIKE_INIT, SSH2_MSG_PQ_SIKE_REPLY},
+ 	{PQ_OQS_KEX_SUFFIX("sike-p751-sha384"), OQS_KEM_alg_sike_p751,
+ 	SSH2_MSG_PQ_SIKE_INIT, SSH2_MSG_PQ_SIKE_REPLY},
+-	{PQ_OQS_KEX_SUFFIX("-sha384"), OQS_KEM_alg_sike_p434_compressed,
++	{PQ_OQS_KEX_SUFFIX("sike-p434-compressed-sha384"), OQS_KEM_alg_sike_p434_compressed,
+ 	SSH2_MSG_PQ_SIKE_INIT, SSH2_MSG_PQ_SIKE_REPLY},
+ 	{PQ_OQS_KEX_SUFFIX("sike-p503-compressed-sha384"), OQS_KEM_alg_sike_p503_compressed,
+ 	SSH2_MSG_PQ_SIKE_INIT, SSH2_MSG_PQ_SIKE_REPLY},
+--- a/myproposal.h
++++ b/myproposal.h
+@@ -120,7 +120,7 @@
+     PQ_OQS_KEX_METHOD("sike-p503-sha384") \
+     PQ_OQS_KEX_METHOD("sike-p610-sha384") \
+     PQ_OQS_KEX_METHOD("sike-p751-sha384") \
+-    PQ_OQS_KEX_METHOD("-sha384") \
++    PQ_OQS_KEX_METHOD("sike-p434-compressed-sha384") \
+     PQ_OQS_KEX_METHOD("sike-p503-compressed-sha384") \
+     PQ_OQS_KEX_METHOD("sike-p610-compressed-sha384") \
+     PQ_OQS_KEX_METHOD("sike-p751-compressed-sha384")
+@@ -275,7 +275,7 @@
+     HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p503-sha384") \
+     HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p610-sha384") \
+     HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p751-sha384") \
+-    HYBRID_ECDH_OQS_METHOD("ecdh-nistp384--sha384") \
++    HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p434-compressed-sha384") \
+     HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p503-compressed-sha384") \
+     HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p610-compressed-sha384") \
+     HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-sike-p751-compressed-sha384")
+--- a/oqs-template/generate.yml
++++ b/oqs-template/generate.yml
+@@ -559,7 +559,7 @@
+         name: "SIKE_P751"
+         oqs_meth: "OQS_KEM_alg_sike_p751"
+       -
+-        NAME: "SIKE_P434_COMPRESSED"
++        name: "SIKE_P434_COMPRESSED"
+         oqs_meth: "OQS_KEM_alg_sike_p434_compressed"
+       -
+         name: "SIKE_P503_COMPRESSED"
+--- a/oqs-template/ssh-keygen.c/assign_pq_id_paths.fragment
++++ b/oqs-template/ssh-keygen.c/assign_pq_id_paths.fragment
+@@ -1,8 +1,14 @@
++
+ {%- for sig in config['sigs'] %}
+     {%- for variant in sig['variants'] %}
+ 		case KEY_{{ variant['name'] }}:
+ 			name = _PATH_SSH_CLIENT_ID_{{ variant['name'] }};
+ 			break;
++	{%- for classical_alg in variant['mix_with'] %}
++		case KEY_{{ classical_alg.name|upper }}_{{ variant['name'] }}:
++			name = _PATH_SSH_CLIENT_ID_{{ classical_alg.name|upper }}_{{ variant['name'] }};
++			break;
++	{%- endfor %}
+     {%- endfor %}
+ {%- endfor %}
+ 
+--- a/oqs-test/test_openssh.py
++++ b/oqs-test/test_openssh.py
+@@ -18,9 +18,9 @@
+ kex_algs = [
+ ##### OQS_TEMPLATE_FRAGMENT_LIST_KEXS_START
+     # post-quantum only kex
+-    'bike1-l1-cpa-sha384@openquantumsafe.org','bike1-l3-cpa-sha384@openquantumsafe.org','bike1-l1-fo-sha384@openquantumsafe.org','bike1-l3-fo-sha384@openquantumsafe.org','classic-mceliece-348864-sha384@openquantumsafe.org','classic-mceliece-348864f-sha384@openquantumsafe.org','classic-mceliece-460896-sha384@openquantumsafe.org','classic-mceliece-460896f-sha384@openquantumsafe.org','classic-mceliece-6688128-sha384@openquantumsafe.org','classic-mceliece-6688128f-sha384@openquantumsafe.org','classic-mceliece-6960119-sha384@openquantumsafe.org','classic-mceliece-6960119f-sha384@openquantumsafe.org','classic-mceliece-8192128-sha384@openquantumsafe.org','classic-mceliece-8192128f-sha384@openquantumsafe.org','frodo-640-aes-sha384@openquantumsafe.org','frodo-640-shake-sha384@openquantumsafe.org','frodo-976-aes-sha384@openquantumsafe.org','frodo-976-shake-sha384@openquantumsafe.org','frodo-1344-aes-sha384@openquantumsafe.org','frodo-1344-shake-sha384@openquantumsafe.org','kyber-512-sha384@openquantumsafe.org','kyber-768-sha384@openquantumsafe.org','kyber-1024-sha384@openquantumsafe.org','kyber-512-90s-sha384@openquantumsafe.org','kyber-768-90s-sha384@openquantumsafe.org','kyber-1024-90s-sha384@openquantumsafe.org','newhope-512-sha384@openquantumsafe.org','newhope-1024-sha384@openquantumsafe.org','ntru-hps-2048-509-sha384@openquantumsafe.org','ntru-hps-2048-677-sha384@openquantumsafe.org','ntru-hrss-701-sha384@openquantumsafe.org','ntru-hps-4096-821-sha384@openquantumsafe.org','saber-lightsaber-sha384@openquantumsafe.org','saber-saber-sha384@openquantumsafe.org','saber-firesaber-sha384@openquantumsafe.org','sidh-p434-sha384@openquantumsafe.org','sidh-p503-sha384@openquantumsafe.org','sidh-p610-sha384@openquantumsafe.org','sidh-p751-sha384@openquantumsafe.org','sidh-p434-compressed-sha384@openquantumsafe.org','sidh-p503-compressed-sha384@openquantumsafe.org','sidh-p610-compressed-sha384@openquantumsafe.org','sidh-p751-compressed-sha384@openquantumsafe.org','sike-p434-sha384@openquantumsafe.org','sike-p503-sha384@openquantumsafe.org','sike-p610-sha384@openquantumsafe.org','sike-p751-sha384@openquantumsafe.org','-sha384@openquantumsafe.org','sike-p503-compressed-sha384@openquantumsafe.org','sike-p610-compressed-sha384@openquantumsafe.org','sike-p751-compressed-sha384@openquantumsafe.org','babybear-sha384@openquantumsafe.org','babybear-ephem-sha384@openquantumsafe.org','mamabear-sha384@openquantumsafe.org','mamabear-ephem-sha384@openquantumsafe.org','papabear-sha384@openquantumsafe.org','papabear-ephem-sha384@openquantumsafe.org','hqc-128-1-cca2-sha384@openquantumsafe.org','hqc-192-1-cca2-sha384@openquantumsafe.org','hqc-192-2-cca2-sha384@openquantumsafe.org','hqc-256-1-cca2-sha384@openquantumsafe.org','hqc-256-2-cca2-sha384@openquantumsafe.org','hqc-256-3-cca2-sha384@openquantumsafe.org',
++    'bike1-l1-cpa-sha384@openquantumsafe.org','bike1-l3-cpa-sha384@openquantumsafe.org','bike1-l1-fo-sha384@openquantumsafe.org','bike1-l3-fo-sha384@openquantumsafe.org','classic-mceliece-348864-sha384@openquantumsafe.org','classic-mceliece-348864f-sha384@openquantumsafe.org','classic-mceliece-460896-sha384@openquantumsafe.org','classic-mceliece-460896f-sha384@openquantumsafe.org','classic-mceliece-6688128-sha384@openquantumsafe.org','classic-mceliece-6688128f-sha384@openquantumsafe.org','classic-mceliece-6960119-sha384@openquantumsafe.org','classic-mceliece-6960119f-sha384@openquantumsafe.org','classic-mceliece-8192128-sha384@openquantumsafe.org','classic-mceliece-8192128f-sha384@openquantumsafe.org','frodo-640-aes-sha384@openquantumsafe.org','frodo-640-shake-sha384@openquantumsafe.org','frodo-976-aes-sha384@openquantumsafe.org','frodo-976-shake-sha384@openquantumsafe.org','frodo-1344-aes-sha384@openquantumsafe.org','frodo-1344-shake-sha384@openquantumsafe.org','kyber-512-sha384@openquantumsafe.org','kyber-768-sha384@openquantumsafe.org','kyber-1024-sha384@openquantumsafe.org','kyber-512-90s-sha384@openquantumsafe.org','kyber-768-90s-sha384@openquantumsafe.org','kyber-1024-90s-sha384@openquantumsafe.org','newhope-512-sha384@openquantumsafe.org','newhope-1024-sha384@openquantumsafe.org','ntru-hps-2048-509-sha384@openquantumsafe.org','ntru-hps-2048-677-sha384@openquantumsafe.org','ntru-hrss-701-sha384@openquantumsafe.org','ntru-hps-4096-821-sha384@openquantumsafe.org','saber-lightsaber-sha384@openquantumsafe.org','saber-saber-sha384@openquantumsafe.org','saber-firesaber-sha384@openquantumsafe.org','sidh-p434-sha384@openquantumsafe.org','sidh-p503-sha384@openquantumsafe.org','sidh-p610-sha384@openquantumsafe.org','sidh-p751-sha384@openquantumsafe.org','sidh-p434-compressed-sha384@openquantumsafe.org','sidh-p503-compressed-sha384@openquantumsafe.org','sidh-p610-compressed-sha384@openquantumsafe.org','sidh-p751-compressed-sha384@openquantumsafe.org','sike-p434-sha384@openquantumsafe.org','sike-p503-sha384@openquantumsafe.org','sike-p610-sha384@openquantumsafe.org','sike-p751-sha384@openquantumsafe.org','sike-p434-compressed-sha384@openquantumsafe.org','sike-p503-compressed-sha384@openquantumsafe.org','sike-p610-compressed-sha384@openquantumsafe.org','sike-p751-compressed-sha384@openquantumsafe.org','babybear-sha384@openquantumsafe.org','babybear-ephem-sha384@openquantumsafe.org','mamabear-sha384@openquantumsafe.org','mamabear-ephem-sha384@openquantumsafe.org','papabear-sha384@openquantumsafe.org','papabear-ephem-sha384@openquantumsafe.org','hqc-128-1-cca2-sha384@openquantumsafe.org','hqc-192-1-cca2-sha384@openquantumsafe.org','hqc-192-2-cca2-sha384@openquantumsafe.org','hqc-256-1-cca2-sha384@openquantumsafe.org','hqc-256-2-cca2-sha384@openquantumsafe.org','hqc-256-3-cca2-sha384@openquantumsafe.org',
+     # hybrid kex
+-    'ecdh-nistp384-bike1-l1-cpa-sha384@openquantumsafe.org','ecdh-nistp384-bike1-l3-cpa-sha384@openquantumsafe.org','ecdh-nistp384-bike1-l1-fo-sha384@openquantumsafe.org','ecdh-nistp384-bike1-l3-fo-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-348864-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-348864f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-460896-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-460896f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6688128-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6688128f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6960119-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6960119f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-8192128-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-8192128f-sha384@openquantumsafe.org','ecdh-nistp384-frodo-640-aes-sha384@openquantumsafe.org','ecdh-nistp384-frodo-640-shake-sha384@openquantumsafe.org','ecdh-nistp384-frodo-976-aes-sha384@openquantumsafe.org','ecdh-nistp384-frodo-976-shake-sha384@openquantumsafe.org','ecdh-nistp384-frodo-1344-aes-sha384@openquantumsafe.org','ecdh-nistp384-frodo-1344-shake-sha384@openquantumsafe.org','ecdh-nistp384-kyber-512-sha384@openquantumsafe.org','ecdh-nistp384-kyber-768-sha384@openquantumsafe.org','ecdh-nistp384-kyber-1024-sha384@openquantumsafe.org','ecdh-nistp384-kyber-512-90s-sha384@openquantumsafe.org','ecdh-nistp384-kyber-768-90s-sha384@openquantumsafe.org','ecdh-nistp384-kyber-1024-90s-sha384@openquantumsafe.org','ecdh-nistp384-newhope-512-sha384@openquantumsafe.org','ecdh-nistp384-newhope-1024-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hps-2048-509-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hps-2048-677-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hrss-701-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hps-4096-821-sha384@openquantumsafe.org','ecdh-nistp384-saber-lightsaber-sha384@openquantumsafe.org','ecdh-nistp384-saber-saber-sha384@openquantumsafe.org','ecdh-nistp384-saber-firesaber-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p434-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p503-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p610-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p751-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p434-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p503-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p610-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p751-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p434-sha384@openquantumsafe.org','ecdh-nistp384-sike-p503-sha384@openquantumsafe.org','ecdh-nistp384-sike-p610-sha384@openquantumsafe.org','ecdh-nistp384-sike-p751-sha384@openquantumsafe.org','ecdh-nistp384--sha384@openquantumsafe.org','ecdh-nistp384-sike-p503-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p610-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p751-compressed-sha384@openquantumsafe.org','ecdh-nistp384-babybear-sha384@openquantumsafe.org','ecdh-nistp384-babybear-ephem-sha384@openquantumsafe.org','ecdh-nistp384-mamabear-sha384@openquantumsafe.org','ecdh-nistp384-mamabear-ephem-sha384@openquantumsafe.org','ecdh-nistp384-papabear-sha384@openquantumsafe.org','ecdh-nistp384-papabear-ephem-sha384@openquantumsafe.org','ecdh-nistp384-hqc-128-1-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-192-1-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-192-2-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-256-1-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-256-2-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-256-3-cca2-sha384@openquantumsafe.org',
++    'ecdh-nistp384-bike1-l1-cpa-sha384@openquantumsafe.org','ecdh-nistp384-bike1-l3-cpa-sha384@openquantumsafe.org','ecdh-nistp384-bike1-l1-fo-sha384@openquantumsafe.org','ecdh-nistp384-bike1-l3-fo-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-348864-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-348864f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-460896-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-460896f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6688128-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6688128f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6960119-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-6960119f-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-8192128-sha384@openquantumsafe.org','ecdh-nistp384-classic-mceliece-8192128f-sha384@openquantumsafe.org','ecdh-nistp384-frodo-640-aes-sha384@openquantumsafe.org','ecdh-nistp384-frodo-640-shake-sha384@openquantumsafe.org','ecdh-nistp384-frodo-976-aes-sha384@openquantumsafe.org','ecdh-nistp384-frodo-976-shake-sha384@openquantumsafe.org','ecdh-nistp384-frodo-1344-aes-sha384@openquantumsafe.org','ecdh-nistp384-frodo-1344-shake-sha384@openquantumsafe.org','ecdh-nistp384-kyber-512-sha384@openquantumsafe.org','ecdh-nistp384-kyber-768-sha384@openquantumsafe.org','ecdh-nistp384-kyber-1024-sha384@openquantumsafe.org','ecdh-nistp384-kyber-512-90s-sha384@openquantumsafe.org','ecdh-nistp384-kyber-768-90s-sha384@openquantumsafe.org','ecdh-nistp384-kyber-1024-90s-sha384@openquantumsafe.org','ecdh-nistp384-newhope-512-sha384@openquantumsafe.org','ecdh-nistp384-newhope-1024-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hps-2048-509-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hps-2048-677-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hrss-701-sha384@openquantumsafe.org','ecdh-nistp384-ntru-hps-4096-821-sha384@openquantumsafe.org','ecdh-nistp384-saber-lightsaber-sha384@openquantumsafe.org','ecdh-nistp384-saber-saber-sha384@openquantumsafe.org','ecdh-nistp384-saber-firesaber-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p434-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p503-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p610-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p751-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p434-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p503-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p610-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sidh-p751-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p434-sha384@openquantumsafe.org','ecdh-nistp384-sike-p503-sha384@openquantumsafe.org','ecdh-nistp384-sike-p610-sha384@openquantumsafe.org','ecdh-nistp384-sike-p751-sha384@openquantumsafe.org','ecdh-nistp384-sike-p434-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p503-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p610-compressed-sha384@openquantumsafe.org','ecdh-nistp384-sike-p751-compressed-sha384@openquantumsafe.org','ecdh-nistp384-babybear-sha384@openquantumsafe.org','ecdh-nistp384-babybear-ephem-sha384@openquantumsafe.org','ecdh-nistp384-mamabear-sha384@openquantumsafe.org','ecdh-nistp384-mamabear-ephem-sha384@openquantumsafe.org','ecdh-nistp384-papabear-sha384@openquantumsafe.org','ecdh-nistp384-papabear-ephem-sha384@openquantumsafe.org','ecdh-nistp384-hqc-128-1-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-192-1-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-192-2-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-256-1-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-256-2-cca2-sha384@openquantumsafe.org','ecdh-nistp384-hqc-256-3-cca2-sha384@openquantumsafe.org',
+ ##### OQS_TEMPLATE_FRAGMENT_LIST_KEXS_END
+         ]
+ 
+--- a/regress/unittests/kex/test_kex.c
++++ b/regress/unittests/kex/test_kex.c
+@@ -263,7 +263,7 @@
+ 	do_kex(KEX_ECDH_NISTP384_SIKE_P503_SHA384);
+ 	do_kex(KEX_ECDH_NISTP384_SIKE_P610_SHA384);
+ 	do_kex(KEX_ECDH_NISTP384_SIKE_P751_SHA384);
+-	do_kex(KEX_ECDH_NISTP384__SHA384);
++	do_kex(KEX_ECDH_NISTP384_SIKE_P434_COMPRESSED_SHA384);
+ 	do_kex(KEX_ECDH_NISTP384_SIKE_P503_COMPRESSED_SHA384);
+ 	do_kex(KEX_ECDH_NISTP384_SIKE_P610_COMPRESSED_SHA384);
+ 	do_kex(KEX_ECDH_NISTP384_SIKE_P751_COMPRESSED_SHA384);
+@@ -358,7 +358,7 @@
+ 	do_kex(KEX_SIKE_P503_SHA384);
+ 	do_kex(KEX_SIKE_P610_SHA384);
+ 	do_kex(KEX_SIKE_P751_SHA384);
+-	do_kex(KEX__SHA384);
++	do_kex(KEX_SIKE_P434_COMPRESSED_SHA384);
+ 	do_kex(KEX_SIKE_P503_COMPRESSED_SHA384);
+ 	do_kex(KEX_SIKE_P610_COMPRESSED_SHA384);
+ 	do_kex(KEX_SIKE_P751_COMPRESSED_SHA384);
+--- a/ssh-keygen.c
++++ b/ssh-keygen.c
+@@ -310,42 +310,114 @@
+ 		case KEY_OQSDEFAULT:
+ 			name = _PATH_SSH_CLIENT_ID_OQSDEFAULT;
+ 			break;
++		case KEY_RSA3072_OQSDEFAULT:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_OQSDEFAULT;
++			break;
++		case KEY_P256_OQSDEFAULT:
++			name = _PATH_SSH_CLIENT_ID_P256_OQSDEFAULT;
++			break;
+ 		case KEY_DILITHIUM_2:
+ 			name = _PATH_SSH_CLIENT_ID_DILITHIUM_2;
+ 			break;
++		case KEY_RSA3072_DILITHIUM_2:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_DILITHIUM_2;
++			break;
++		case KEY_P256_DILITHIUM_2:
++			name = _PATH_SSH_CLIENT_ID_P256_DILITHIUM_2;
++			break;
+ 		case KEY_FALCON_512:
+ 			name = _PATH_SSH_CLIENT_ID_FALCON_512;
+ 			break;
++		case KEY_RSA3072_FALCON_512:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_FALCON_512;
++			break;
++		case KEY_P256_FALCON_512:
++			name = _PATH_SSH_CLIENT_ID_P256_FALCON_512;
++			break;
+ 		case KEY_MQDSS_31_48:
+ 			name = _PATH_SSH_CLIENT_ID_MQDSS_31_48;
+ 			break;
++		case KEY_RSA3072_MQDSS_31_48:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_MQDSS_31_48;
++			break;
++		case KEY_P256_MQDSS_31_48:
++			name = _PATH_SSH_CLIENT_ID_P256_MQDSS_31_48;
++			break;
+ 		case KEY_PICNIC_L1FS:
+ 			name = _PATH_SSH_CLIENT_ID_PICNIC_L1FS;
+ 			break;
++		case KEY_RSA3072_PICNIC_L1FS:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_PICNIC_L1FS;
++			break;
++		case KEY_P256_PICNIC_L1FS:
++			name = _PATH_SSH_CLIENT_ID_P256_PICNIC_L1FS;
++			break;
+ 		case KEY_PICNIC3_L1:
+ 			name = _PATH_SSH_CLIENT_ID_PICNIC3_L1;
+ 			break;
++		case KEY_RSA3072_PICNIC3_L1:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_PICNIC3_L1;
++			break;
++		case KEY_P256_PICNIC3_L1:
++			name = _PATH_SSH_CLIENT_ID_P256_PICNIC3_L1;
++			break;
+ 		case KEY_QTESLA_P_I:
+ 			name = _PATH_SSH_CLIENT_ID_QTESLA_P_I;
+ 			break;
++		case KEY_RSA3072_QTESLA_P_I:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_QTESLA_P_I;
++			break;
++		case KEY_P256_QTESLA_P_I:
++			name = _PATH_SSH_CLIENT_ID_P256_QTESLA_P_I;
++			break;
+ 		case KEY_RAINBOW_IA_CLASSIC:
+ 			name = _PATH_SSH_CLIENT_ID_RAINBOW_IA_CLASSIC;
+ 			break;
++		case KEY_RSA3072_RAINBOW_IA_CLASSIC:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_RAINBOW_IA_CLASSIC;
++			break;
++		case KEY_P256_RAINBOW_IA_CLASSIC:
++			name = _PATH_SSH_CLIENT_ID_P256_RAINBOW_IA_CLASSIC;
++			break;
+ 		case KEY_RAINBOW_IIIC_CLASSIC:
+ 			name = _PATH_SSH_CLIENT_ID_RAINBOW_IIIC_CLASSIC;
+ 			break;
++		case KEY_P384_RAINBOW_IIIC_CLASSIC:
++			name = _PATH_SSH_CLIENT_ID_P384_RAINBOW_IIIC_CLASSIC;
++			break;
+ 		case KEY_RAINBOW_VC_CLASSIC:
+ 			name = _PATH_SSH_CLIENT_ID_RAINBOW_VC_CLASSIC;
+ 			break;
++		case KEY_P521_RAINBOW_VC_CLASSIC:
++			name = _PATH_SSH_CLIENT_ID_P521_RAINBOW_VC_CLASSIC;
++			break;
+ 		case KEY_SPHINCS_HARAKA_128F_ROBUST:
+ 			name = _PATH_SSH_CLIENT_ID_SPHINCS_HARAKA_128F_ROBUST;
+ 			break;
++		case KEY_RSA3072_SPHINCS_HARAKA_128F_ROBUST:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_SPHINCS_HARAKA_128F_ROBUST;
++			break;
++		case KEY_P256_SPHINCS_HARAKA_128F_ROBUST:
++			name = _PATH_SSH_CLIENT_ID_P256_SPHINCS_HARAKA_128F_ROBUST;
++			break;
+ 		case KEY_SPHINCS_SHA256_128F_ROBUST:
+ 			name = _PATH_SSH_CLIENT_ID_SPHINCS_SHA256_128F_ROBUST;
+ 			break;
++		case KEY_RSA3072_SPHINCS_SHA256_128F_ROBUST:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_SPHINCS_SHA256_128F_ROBUST;
++			break;
++		case KEY_P256_SPHINCS_SHA256_128F_ROBUST:
++			name = _PATH_SSH_CLIENT_ID_P256_SPHINCS_SHA256_128F_ROBUST;
++			break;
+ 		case KEY_SPHINCS_SHAKE256_128F_ROBUST:
+ 			name = _PATH_SSH_CLIENT_ID_SPHINCS_SHAKE256_128F_ROBUST;
+ 			break;
++		case KEY_RSA3072_SPHINCS_SHAKE256_128F_ROBUST:
++			name = _PATH_SSH_CLIENT_ID_RSA3072_SPHINCS_SHAKE256_128F_ROBUST;
++			break;
++		case KEY_P256_SPHINCS_SHAKE256_128F_ROBUST:
++			name = _PATH_SSH_CLIENT_ID_P256_SPHINCS_SHAKE256_128F_ROBUST;
++			break;
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_PQ_ID_PATHS_END
+ 		default:
+ 			fatal("bad key type");

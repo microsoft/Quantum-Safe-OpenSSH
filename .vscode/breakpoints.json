@@ -1,0 +1,107 @@
+[
+  {
+    "location": "/openssh/servconf.c",
+    "description" : "inspect default server options on startup.",
+    "line": [
+      {
+        "line": 266,
+        "character": 0
+      },
+      {
+        "line": 266,
+        "character": 0
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "location": "/openssh/kex.c",
+    "description" : "ssh-server & client: choose hostkey algorithm.",
+    "line": [
+      {
+        "line": 1068,
+        "character": 0
+      },
+      {
+        "line": 1068,
+        "character": 0
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "location": "/openssh/kex.c",
+    "description" : "ssh-server & client: choose kex algorithm.",
+    "line": [
+      {
+        "line": 1034,
+        "character": 0
+      },
+      {
+        "line": 1034,
+        "character": 0
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "location": "/liboqs/src/kem/kem.c",
+    "description" : "ssh-server: key encapsulation.",
+    "line": [
+      {
+        "line": 887,
+        "character": 0
+      },
+      {
+        "line": 887,
+        "character": 0
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "location": "/liboqs/src/kem/kem.c",
+    "description" : "ssh-client: key de-encapsulation.",
+    "line": [
+      {
+        "line": 895,
+        "character": 0
+      },
+      {
+        "line": 895,
+        "character": 0
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "location": "/liboqs/src/sig/sig.c",
+    "description" : "ssh-server & client: create signature.",
+    "line": [
+      {
+        "line": 926,
+        "character": 0
+      },
+      {
+        "line": 926,
+        "character": 0
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "location": "/liboqs/src/sig/sig.c",
+    "description" : "ssh-server & client: verify signature.",
+    "line": [
+      {
+        "line": 934,
+        "character": 0
+      },
+      {
+        "line": 934,
+        "character": 0
+      }
+    ],
+    "enabled": true
+  }
+]

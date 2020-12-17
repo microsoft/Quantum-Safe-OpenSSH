@@ -1,0 +1,58 @@
+# Italian translation of openssh debconf messages.
+# Copyright (C) 2014, openssh package copyright holder
+# This file is distributed under the same license as the openssh package.
+# Beatrice Torracca <beatricet@libero.it>, 2014.
+msgid ""
+msgstr ""
+"Project-Id-Version: openssh\n"
+"Report-Msgid-Bugs-To: openssh@packages.debian.org\n"
+"POT-Creation-Date: 2014-03-20 02:06+0000\n"
+"PO-Revision-Date: 2014-03-28 11:12+0200\n"
+"Last-Translator: Beatrice Torracca <beatricet@libero.it>\n"
+"Language-Team: Italian <debian-l10n-italian@lists.debian.org>\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Virtaal 0.7.1\n"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid "Disable SSH password authentication for root?"
+msgstr "Disabilitare l'autenticazione SSH con password per root?"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"Previous versions of openssh-server permitted logging in as root over SSH "
+"using password authentication. The default for new installations is now "
+"\"PermitRootLogin prohibit-password\", which disables password "
+"authentication for root without breaking systems that have explicitly "
+"configured SSH public key authentication for root."
+msgstr ""
+"Le versioni precedenti di openssh-server permettevano il login come root via "
+"SSH, usando l'autenticazione con password. Il comportamento predefinito "
+"delle nuove installazioni è «PermitRootLogin prohibit-password» che "
+"disabilita l'autenticazione con password per root, senza rendere non "
+"funzionanti sistemi che hanno esplicitamente configurato l'autenticazione "
+"SSH con chiave pubblica per root."
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"This change makes systems more secure against brute-force password "
+"dictionary attacks on the root user (a very common target for such attacks). "
+"However, it may break systems that are set up with the expectation of being "
+"able to SSH as root using password authentication. You should only make this "
+"change if you do not need to do that."
+msgstr ""
+"Questo cambiamento rende i sistemi più al sicuro da attacchi di forza bruta "
+"a dizionario sulle password per l'utente root (un obiettivo molto comune per "
+"tali attacchi). Tuttavia, può rendere non funzionanti sistemi che sono "
+"impostati facendo affidamento sulla possibilità di autenticazione SSH come "
+"root usando la password. Si dovrebbe fare questo cambiamento solo se non si "
+"ha bisogno di tale comportamento."

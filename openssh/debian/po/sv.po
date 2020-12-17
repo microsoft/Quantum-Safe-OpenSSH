@@ -1,0 +1,58 @@
+# Swedish translations for openssh package
+# Svenska översättningar för paket openssh.
+# Copyright (C) 2014 THE openssh'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the openssh package.
+# Andreas Rönnquist <gusnan@gusnan.se>, 2014.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssh\n"
+"Report-Msgid-Bugs-To: openssh@packages.debian.org\n"
+"POT-Creation-Date: 2014-03-20 02:06+0000\n"
+"PO-Revision-Date: 2014-03-21 21:36+0100\n"
+"Last-Translator: Andreas Rönnquist <gusnan@gusnan.se>\n"
+"Language-Team: Swedish\n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid "Disable SSH password authentication for root?"
+msgstr "Inaktivera SSH-lösenordsautentisering för root?"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"Previous versions of openssh-server permitted logging in as root over SSH "
+"using password authentication. The default for new installations is now "
+"\"PermitRootLogin prohibit-password\", which disables password "
+"authentication for root without breaking systems that have explicitly "
+"configured SSH public key authentication for root."
+msgstr ""
+"Tidigare versioner av openssh-server tillät inloggning som root över SSH med "
+"hjälp av lösenordsautentisering. Standardinställningen för nya "
+"installationer är nu \"PermitRootLogin prohibit-password\", vilket "
+"inaktiverar lösenordsautentisering för root utan att förstöra system som "
+"explicit har konfigurerat nyckelautentisering med hjälp av publika nycklar "
+"för root."
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"This change makes systems more secure against brute-force password "
+"dictionary attacks on the root user (a very common target for such attacks). "
+"However, it may break systems that are set up with the expectation of being "
+"able to SSH as root using password authentication. You should only make this "
+"change if you do not need to do that."
+msgstr ""
+"Denna förändring gör system säkrare mot brute-force-angrepp med hjälp av "
+"ordlistor med lösenord på root-användaren (ett väldigt vanligt mål för "
+"sådana angrepp). Dock så kan detta förstöra system som förväntas kunna "
+"använda SSH som root med hjälp av lösenordsautentisering. Du skall endast "
+"göra denna förändring om du inte har ett behov av att kunna göra detta."

@@ -1,0 +1,32 @@
+{%- for kem in config['kems'] %}
+	AC_MSG_CHECKING([for libOQS {{ kem['family'] }} support])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+				#include <oqs/oqs.h>
+			]], [[
+					#if defined(OQS_ENABLE_KEM_{{ kem['family'] }}) || ({%- for variant in kem['variants'] -%}defined({{ variant['oqs_meth']|replace("KEM_alg","ENABLE_KEM") }}){% if not loop.last -%}{{ " && " }}{%- endif -%}{%- endfor -%})
+					#else
+					#error "{{ kem['family'] }} is not supported"
+					#endif
+			]])],
+			[ AC_MSG_RESULT([yes])
+				AC_DEFINE([HAVE_{{ kem['family'] }}], [1], [Define to 1 if LibOQS library is compiled with support for {{ kem['family'] }}])
+			], [AC_MSG_RESULT([no])
+	])
+{% endfor -%}
+{%- for sig in config['sigs'] %}
+{%- if sig['family'] != "OQSDEFAULT" %}
+	AC_MSG_CHECKING([for libOQS {{ sig['family'] }} support])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+				#include <oqs/oqs.h>
+			]], [[
+					#if defined(OQS_ENABLE_SIG_{{ sig['family'] }}) || ({%- for variant in sig['variants'] -%}defined({{ variant['oqs_meth']|replace("SIG_alg","ENABLE_SIG") }}){% if not loop.last -%}{{ " && " }}{%- endif -%}{%- endfor -%})
+					#else
+					#error "{{ sig['family'] }} is not supported"
+					#endif
+			]])],
+			[ AC_MSG_RESULT([yes])
+				AC_DEFINE([HAVE_{{ sig['family'] }}], [1], [Define to 1 if LibOQS library is compiled with support for {{ sig['family'] }}])
+			], [AC_MSG_RESULT([no])
+	])
+{%- endif %}
+{% endfor %}

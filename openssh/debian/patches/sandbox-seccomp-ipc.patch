@@ -1,0 +1,48 @@
+From 6f794127bd7d332c1d88a3e35eda97dac4530a15 Mon Sep 17 00:00:00 2001
+From: Jeremy Drake <github@jdrake.com>
+Date: Fri, 11 Oct 2019 18:31:05 -0700
+Subject: Deny (non-fatal) ipc in preauth privsep child.
+
+As noted in openssh/openssh-portable#149, i386 does not have have
+_NR_shmget etc.  Instead, it has a single ipc syscall (see man 2 ipc,
+https://linux.die.net/man/2/ipc).  Add this syscall, if present, to the
+list of syscalls that seccomp will deny non-fatally.
+
+[cjwatson: For backporting to buster, I've dropped the previous change
+to allow ipc on s390.  Upstream refused that since it opens security
+weaknesses and doesn't currently seem to be needed, so I'd already
+dropped that for bullseye.]
+
+Bug-Debian: https://bugs.debian.org/946242
+Origin: backport, https://anongit.mindrot.org/openssh.git/commit/?id=30f704ebc0e9e32b3d12f5d9e8c1b705fdde2c89
+Last-Update: 2020-01-11
+
+Patch-Name: sandbox-seccomp-ipc.patch
+---
+ sandbox-seccomp-filter.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/sandbox-seccomp-filter.c b/sandbox-seccomp-filter.c
+index e8f31555e..9b6aea8db 100644
+--- a/sandbox-seccomp-filter.c
++++ b/sandbox-seccomp-filter.c
+@@ -158,6 +158,9 @@ static const struct sock_filter preauth_insns[] = {
+ #ifdef __NR_shmdt
+ 	SC_DENY(__NR_shmdt, EACCES),
+ #endif
++#ifdef __NR_ipc
++	SC_DENY(__NR_ipc, EACCES),
++#endif
+ 
+ 	/* Syscalls to permit */
+ #ifdef __NR_brk
+@@ -205,9 +208,6 @@ static const struct sock_filter preauth_insns[] = {
+ #ifdef __NR_getuid32
+ 	SC_ALLOW(__NR_getuid32),
+ #endif
+-#if defined(__NR_ipc) && defined(__s390__)
+-	SC_ALLOW(__NR_ipc),
+-#endif
+ #ifdef __NR_madvise
+ 	SC_ALLOW(__NR_madvise),
+ #endif

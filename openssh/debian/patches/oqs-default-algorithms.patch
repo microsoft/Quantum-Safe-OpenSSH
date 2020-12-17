@@ -1,0 +1,128 @@
+This patch does the following:
+
+1. Adds the PQ signature algorithms to the default list. These algorithms will work by default without having to
+   specify them with additional parameters.
+
+2. Reorder some of the algorithm lists so that the hybrid algorithms will be attempted first when none are specified.
+
+3. Increase the MAX_PROP size. The algorithm that matches client/server algorithms will only search MAX_PROP entries.
+   There are many more algorithms now that we've updated the default lists.
+
+---
+ match.c      |    3 ++-
+ myproposal.h |   53 ++++++++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 48 insertions(+), 8 deletions(-)
+
+--- a/match.c
++++ b/match.c
+@@ -251,7 +251,8 @@
+  * Returns first item from client-list that is also supported by server-list,
+  * caller must free the returned string.
+  */
+-#define	MAX_PROP	40
++// Increased from 40 to allow all the KEX algorithms as default
++#define	MAX_PROP	140
+ #define	SEP	","
+ char *
+ match_list(const char *client, const char *server, u_int *next)
+--- a/myproposal.h
++++ b/myproposal.h
+@@ -166,17 +166,53 @@
+ ///// OQS_TEMPLATE_FRAGMENT_UNDEFINE_PQ_KEXS_END
+ #endif /* defined(WITH_OQS) && defined(WITH_PQ_KEX) */
+ 
++#define PQ_PK_ALGS \
++    "ssh-rsa3072-dilithium2," \
++    "ssh-p256-dilithium2," \
++    "ssh-rsa3072-falcon512," \
++    "ssh-p256-falcon512," \
++    "ssh-rsa3072-mqdss3148," \
++    "ssh-p256-mqdss3148," \
++    "ssh-rsa3072-picnicl1fs," \
++    "ssh-p256-picnicl1fs," \
++    "ssh-rsa3072-picnic3l1," \
++    "ssh-p256-picnic3l1," \
++    "ssh-rsa3072-qteslapi," \
++    "ssh-p256-qteslapi," \
++    "ssh-rsa3072-rainbowiaclassic," \
++    "ssh-p256-rainbowiaclassic," \
++    "ssh-p384-rainbowiiicclassic," \
++    "ssh-p521-rainbowvcclassic," \
++    "ssh-rsa3072-sphincsharaka128frobust," \
++    "ssh-p256-sphincsharaka128frobust," \
++    "ssh-rsa3072-sphincssha256128frobust," \
++    "ssh-p256-sphincssha256128frobust," \
++    "ssh-rsa3072-sphincsshake256128frobust," \
++    "ssh-p256-sphincsshake256128frobust," \
++    "ssh-dilithium2," \
++    "ssh-falcon512," \
++    "ssh-mqdss3148," \
++    "ssh-picnicl1fs," \
++    "ssh-picnic3l1," \
++    "ssh-qteslapi," \
++    "ssh-rainbowiaclassic," \
++    "ssh-rainbowiiicclassic," \
++    "ssh-rainbowvcclassic," \
++    "ssh-sphincsharaka128frobust," \
++    "ssh-sphincssha256128frobust," \
++    "ssh-sphincsshake256128frobust,"
++
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_PQ_KEXS_START
+ #define KEX_PQ_METHODS \
++    KEX_PQ_METHOD_SIKE \
++    KEX_PQ_METHOD_FRODO \
+     KEX_PQ_METHOD_BIKE \
+     KEX_PQ_METHOD_CLASSIC_MCELIECE \
+-    KEX_PQ_METHOD_FRODO \
+     KEX_PQ_METHOD_KYBER \
+     KEX_PQ_METHOD_NEWHOPE \
+     KEX_PQ_METHOD_NTRU \
+     KEX_PQ_METHOD_SABER \
+     KEX_PQ_METHOD_SIDH \
+-    KEX_PQ_METHOD_SIKE \
+     KEX_PQ_METHOD_THREEBEARS \
+     KEX_PQ_METHOD_HQC
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_PQ_KEXS_END
+@@ -321,16 +357,17 @@
+ #endif /* defined(WITH_OQS) && defined(WITH_HYBRID_KEX) */
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_HYBRID_KEXS_START
+-#define KEX_HYBRID_METHODS \
+-    KEX_HYBRID_METHOD_BIKE \
+-    KEX_HYBRID_METHOD_CLASSIC_MCELIECE \
++#define KEX_HYBRID_METHODS_1 \
++    KEX_HYBRID_METHOD_SIKE \
+     KEX_HYBRID_METHOD_FRODO \
++    KEX_HYBRID_METHOD_BIKE
++#define KEX_HYBRID_METHODS_2 \
++    KEX_HYBRID_METHOD_CLASSIC_MCELIECE \
+     KEX_HYBRID_METHOD_KYBER \
+     KEX_HYBRID_METHOD_NEWHOPE \
+     KEX_HYBRID_METHOD_NTRU \
+     KEX_HYBRID_METHOD_SABER \
+     KEX_HYBRID_METHOD_SIDH \
+-    KEX_HYBRID_METHOD_SIKE \
+     KEX_HYBRID_METHOD_THREEBEARS \
+     KEX_HYBRID_METHOD_HQC
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_HYBRID_KEXS_END
+@@ -397,10 +434,11 @@
+ #  define KEX_CURVE25519_METHODS ""
+ # endif
+ #define KEX_COMMON_KEX \
++	KEX_HYBRID_METHODS_1 \
+ 	KEX_CURVE25519_METHODS \
+ 	KEX_ECDH_METHODS \
+ 	KEX_SHA2_METHODS \
+-	KEX_HYBRID_METHODS \
++	KEX_HYBRID_METHODS_2 \
+ 	KEX_PQ_METHODS
+ 
+ #define KEX_SERVER_KEX KEX_COMMON_KEX \
+@@ -413,6 +451,7 @@
+ 	"diffie-hellman-group14-sha1"
+ 
+ #define	KEX_DEFAULT_PK_ALG	\
++    PQ_PK_ALGS \
+ 	HOSTKEY_ECDSA_CERT_METHODS \
+ 	"ssh-ed25519-cert-v01@openssh.com," \
+ 	"rsa-sha2-512-cert-v01@openssh.com," \

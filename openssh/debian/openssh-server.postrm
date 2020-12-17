@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+#DEBHELPER#
+
+case $1 in
+	purge)
+		# Remove all non-conffiles that ssh might create, so that we
+		# can smoothly remove /etc/ssh if and only if the user
+		# hasn't dropped some other files in there. Conffiles have
+		# already been removed at this point.
+		rm -f /etc/ssh/ssh_host_key /etc/ssh/ssh_host_key.pub
+		rm -f /etc/ssh/ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key.pub
+		rm -f /etc/ssh/ssh_host_dsa_key /etc/ssh/ssh_host_dsa_key.pub
+		rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_ecdsa_key.pub
+		rm -f /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_ed25519_key.pub
+		for ext in .ucf-new .ucf-old .ucf-dist ""; do
+			rm -f "/etc/ssh/sshd_config$ext"
+		done
+		if which ucf >/dev/null 2>&1; then
+			ucf --purge /etc/ssh/sshd_config
+		fi
+		if which ucfr >/dev/null 2>&1; then
+			ucfr --purge openssh-server /etc/ssh/sshd_config
+		fi
+		rm -f /etc/ssh/sshd_not_to_be_run
+		[ ! -d /etc/ssh ] || rmdir --ignore-fail-on-non-empty /etc/ssh
+
+		if which deluser >/dev/null 2>&1; then
+			deluser --quiet sshd > /dev/null || true
+		fi
+		;;
+esac
+
+exit 0

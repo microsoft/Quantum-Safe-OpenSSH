@@ -1,0 +1,4 @@
+{%- for kem in config['kems'] %}
+#define KEX_PQ_METHOD_{{ kem['family'] }} ""
+{%- endfor %}
+

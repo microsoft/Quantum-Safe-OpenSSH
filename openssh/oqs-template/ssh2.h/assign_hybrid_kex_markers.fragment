@@ -1,0 +1,4 @@
+{%- for kem in config['kems'] %}
+#define SSH2_MSG_HY_ECDH_{{ kem['family'] }}_INIT    30
+#define SSH2_MSG_HY_ECDH_{{ kem['family'] }}_REPLY   31
+{% endfor %}

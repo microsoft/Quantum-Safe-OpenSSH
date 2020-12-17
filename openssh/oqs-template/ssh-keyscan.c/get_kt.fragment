@@ -1,0 +1,16 @@
+{% for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+                   KT_{{ variant['name'] }}| \
+    {%- endfor -%}
+{%- endfor -%}
+{%- set last_sig = config['sigs']|last -%}
+{%- set last_variant = last_sig['variants']|last -%}
+{%- set last_classical_alg = last_variant['mix_with']|last -%}
+{% for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] -%}
+        {%- for classical_alg in variant['mix_with'] %}
+                   KT_{{ classical_alg.name|upper }}_{{ variant['name'] }}{%- if (variant == last_variant) and (classical_alg.name == last_classical_alg.name) -%};{%- else -%}| \{%- endif -%}
+        {% endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+

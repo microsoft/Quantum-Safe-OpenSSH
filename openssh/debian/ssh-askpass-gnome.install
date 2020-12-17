@@ -1,0 +1,3 @@
+#! /usr/bin/dh-exec
+contrib/gnome-ssh-askpass3 => usr/lib/openssh/gnome-ssh-askpass
+debian/ssh-askpass-gnome.png usr/share/pixmaps

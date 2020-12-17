@@ -1,0 +1,40 @@
+{%- set with_rsa3072 = [] -%}
+{%- set with_p256 = [] -%}
+{%- set with_p384 = [] -%}
+{%- set with_p521 = [] -%}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- for classical_alg in variant['mix_with'] -%}
+            {%- if classical_alg.name == 'rsa3072' -%}
+                {%- do with_rsa3072.append(variant) -%}
+            {%- elif classical_alg.name == 'p256' -%}
+                {%- do with_p256.append(variant) -%}
+            {%- elif classical_alg.name == 'p384' -%}
+                {%- do with_p384.append(variant) -%}
+            {%- elif classical_alg.name == 'p521' -%}
+                {%- do with_p521.append(variant) -%}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+#define IS_RSA_HYBRID_ALG_NAME(alg) ( \
+{%- for pq_alg in with_rsa3072 %}
+				strcmp(alg, "ssh-rsa3072-{{ pq_alg['name']|lower|replace('_','') }}") == 0{%- if not loop.last %} || \{%- else -%}){%- endif -%}
+{%- endfor %}
+
+#define IS_RSA_HYBRID(alg) ( \
+{%- for pq_alg in with_rsa3072 %}
+				alg == KEY_RSA3072_{{ pq_alg['name'] }}{%- if not loop.last %} || \{% else %}){% endif %}
+{%- endfor %}
+
+#define IS_ECDSA_HYBRID(alg) ( \
+{%- for pq_alg in with_p256 %}
+				alg == KEY_P256_{{ pq_alg['name'] }}{%- if not loop.last or with_p384 or with_p521 %} || \{% else %}){% endif %}
+{%- endfor -%}
+{%- for pq_alg in with_p384 %}
+				alg == KEY_P384_{{ pq_alg['name'] }}{%- if not loop.last or with_p521 %} || \{% else %}){% endif %}
+{%- endfor %}
+{%- for pq_alg in with_p521 %}
+				alg == KEY_P521_{{ pq_alg['name'] }}{%- if not loop.last %} || \{% else %}){% endif %}
+{%- endfor %}
+

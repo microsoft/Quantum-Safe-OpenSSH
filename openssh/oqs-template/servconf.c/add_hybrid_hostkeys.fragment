@@ -1,0 +1,9 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+        {%- for classical_alg in variant['mix_with'] %}
+		servconf_add_hostkey("[default]", 0, options,
+		    _PATH_HOST_{{ classical_alg.name|upper }}_{{ variant['name'] }}_KEY_FILE);
+        {%- endfor -%}
+    {%- endfor %}
+{%- endfor %}
+

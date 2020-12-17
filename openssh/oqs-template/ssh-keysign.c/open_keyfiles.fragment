@@ -1,0 +1,13 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+	key_fd[i++] = open(_PATH_HOST_{{ variant['name'] }}_KEY_FILE, O_RDONLY);
+    {%- endfor %}
+{%- endfor %}
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+        {%- for classical_alg in variant['mix_with'] %}
+	key_fd[i++] = open(_PATH_HOST_{{ classical_alg.name|upper }}_{{ variant['name'] }}_KEY_FILE, O_RDONLY);
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+

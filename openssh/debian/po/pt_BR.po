@@ -1,0 +1,57 @@
+# Debconf translations for openssh.
+# Copyright (C) 2014 THE openssh'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the openssh package.
+# José de Figueiredo <deb.gnulinux@gmail.com>, 2014.
+#
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssh\n"
+"Report-Msgid-Bugs-To: openssh@packages.debian.org\n"
+"POT-Creation-Date: 2014-03-20 02:06+0000\n"
+"PO-Revision-Date: 2014-11-23 23:49-0200\n"
+"Last-Translator: José de Figueiredo <deb.gnulinux@gmail.com>\n"
+"Language-Team: Brazilian Portuguese <debian-l10n-portuguese@lists.debian."
+"org>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid "Disable SSH password authentication for root?"
+msgstr "Desabilitar autenticação por senha do SSH para root?"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"Previous versions of openssh-server permitted logging in as root over SSH "
+"using password authentication. The default for new installations is now "
+"\"PermitRootLogin prohibit-password\", which disables password "
+"authentication for root without breaking systems that have explicitly "
+"configured SSH public key authentication for root."
+msgstr ""
+"Versões anteriores do openssh-server permitiam login como root sobre SSH "
+"usando autenticação por senha. O padrão para as novas instalações agora é "
+"\"PermitRootLogin prohibit-password\", que desabilita a autenticação por "
+"senha para root sem quebrar sistemas que tenham configurado explicitamente o "
+"SSH para autenticação por chave pública para root."
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"This change makes systems more secure against brute-force password "
+"dictionary attacks on the root user (a very common target for such attacks). "
+"However, it may break systems that are set up with the expectation of being "
+"able to SSH as root using password authentication. You should only make this "
+"change if you do not need to do that."
+msgstr ""
+"Esta alteração torna sistemas mais seguros contra ataques de força bruta por "
+"dicionário de senhas no usuário root (um alvo muito comum destes ataques). "
+"Entretanto, ela pode quebrar sistemas que foram configurados com a "
+"expectativa de acesso SSH com root usando autenticação por senha. Você deve "
+"fazer esta mudança somente se você não precisa fazer isso."

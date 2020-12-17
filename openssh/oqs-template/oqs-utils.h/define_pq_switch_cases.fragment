@@ -1,0 +1,9 @@
+
+#define CASE_KEY_OQS \
+{%- for sig in config['sigs'] -%}
+    {% set outer_loop_last = loop.last %}
+    {%- for variant in sig['variants'] %}
+	case KEY_{{ variant['name'] }}{% if not (outer_loop_last and loop.last) %}: \{% endif %}
+    {%- endfor -%}
+{% endfor %}
+

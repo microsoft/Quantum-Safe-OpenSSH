@@ -1,0 +1,55 @@
+# Danish translation openssh.
+# Copyright (C) 2014 openssh og nedenstående oversættere.
+# This file is distributed under the same license as the openssh package.
+# Joe Hansen <joedalton2@yahoo.dk>, 2014.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssh\n"
+"Report-Msgid-Bugs-To: openssh@packages.debian.org\n"
+"POT-Creation-Date: 2014-03-20 02:06+0000\n"
+"PO-Revision-Date: 2014-03-21 23:51+0200\n"
+"Last-Translator: Joe Hansen <joedalton2@yahoo.dk>\n"
+"Language-Team: Danish <debian-l10n-danish@lists.debian.org>\n"
+"Language: da\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid "Disable SSH password authentication for root?"
+msgstr "Deaktiver SSH-adgangskodegodkendelse for root?"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"Previous versions of openssh-server permitted logging in as root over SSH "
+"using password authentication. The default for new installations is now "
+"\"PermitRootLogin prohibit-password\", which disables password "
+"authentication for root without breaking systems that have explicitly "
+"configured SSH public key authentication for root."
+msgstr ""
+"Tidligere versioner af openssh-server tillod indlogning som root over SSH "
+"med brug af adgangskodegodkendelse. Standarden for nye installationer er nu "
+"»PermitRootLogin prohibit-password«, som deaktiverer adgangskodegodkendelse "
+"for root uden at ødelægge systemer, som eksplicit har konfigureret SSH-"
+"offentlig nøglegodkendelse for root."
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"This change makes systems more secure against brute-force password "
+"dictionary attacks on the root user (a very common target for such attacks). "
+"However, it may break systems that are set up with the expectation of being "
+"able to SSH as root using password authentication. You should only make this "
+"change if you do not need to do that."
+msgstr ""
+"Denne ændring gør systemer mere sikre mod brute-force angreb vis ordlister "
+"med adgangskoder på root-brugeren (et meget ofte mål for sådanne angreb). "
+"Det kan dog ødelægge systemer, som er opsat med forventning om at kunne SSH "
+"som root via brug af adgangskodegodkendelse. Du skal kun lave denne ændring, "
+"hvis du ikke har brug for dette."

@@ -1,0 +1,35 @@
+From cebe4b82b280810172877a7f3d489c506c9a0691 Mon Sep 17 00:00:00 2001
+From: Colin Watson <cjwatson@debian.org>
+Date: Sun, 5 Mar 2017 02:02:11 +0000
+Subject: Restore reading authorized_keys2 by default
+
+Upstream seems to intend to gradually phase this out, so don't assume
+that this will remain the default forever.  However, we were late in
+adopting the upstream sshd_config changes, so it makes sense to extend
+the grace period.
+
+Bug-Debian: https://bugs.debian.org/852320
+Forwarded: not-needed
+Last-Update: 2017-03-05
+
+Patch-Name: restore-authorized_keys2.patch
+---
+ sshd_config | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/sshd_config b/sshd_config
+index ed8272f6d..ee9629102 100644
+--- a/sshd_config
++++ b/sshd_config
+@@ -36,9 +36,8 @@
+ 
+ #PubkeyAuthentication yes
+ 
+-# The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
+-# but this is overridden so installations will only check .ssh/authorized_keys
+-AuthorizedKeysFile	.ssh/authorized_keys
++# Expect .ssh/authorized_keys2 to be disregarded by default in future.
++#AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
+ 
+ #AuthorizedPrincipalsFile none
+ 

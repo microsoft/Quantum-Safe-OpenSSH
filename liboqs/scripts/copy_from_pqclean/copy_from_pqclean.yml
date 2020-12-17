@@ -1,0 +1,487 @@
+kems:
+  -
+    name: classic_mceliece
+    default_implementation: vec
+    schemes:
+      -
+        scheme: "348864"
+        pqclean_scheme: mceliece348864
+        pretty_name_full: Classic-McEliece-348864
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "348864f"
+        pqclean_scheme: mceliece348864f
+        pretty_name_full: Classic-McEliece-348864f
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "460896"
+        pqclean_scheme: mceliece460896
+        pretty_name_full: Classic-McEliece-460896
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "460896f"
+        pqclean_scheme: mceliece460896f
+        pretty_name_full: Classic-McEliece-460896f
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "6688128"
+        pqclean_scheme: mceliece6688128
+        pretty_name_full: Classic-McEliece-6688128
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "6688128f"
+        pqclean_scheme: mceliece6688128f
+        pretty_name_full: Classic-McEliece-6688128f
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "6960119"
+        pqclean_scheme: mceliece6960119
+        pretty_name_full: Classic-McEliece-6960119
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "6960119f"
+        pqclean_scheme: mceliece6960119f
+        pretty_name_full: Classic-McEliece-6960119f
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "8192128"
+        pqclean_scheme: mceliece8192128
+        pretty_name_full: Classic-McEliece-8192128
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+      -
+        scheme: "8192128f"
+        pqclean_scheme: mceliece8192128f
+        pretty_name_full: Classic-McEliece-8192128f
+        implementation: vec
+        sources: ['aes256ctr.c', 'benes.c', 'bm.c', 'controlbits.c', 'decrypt.c', 'encrypt.c', 'fft.c', 'fft_tr.c', 'gf.c', 'operations.c', 'pk_gen.c', 'sk_gen.c', 'transpose.c', 'util.c', 'vec.c']
+  -
+    name: hqc
+    default_implementation: leaktime
+    schemes:
+      -
+        scheme: "128_1_cca2"
+        pqclean_scheme: hqc-128-1-cca2
+        pretty_name_full: HQC-128-1-CCA2
+      -
+        scheme: "192_1_cca2"
+        pqclean_scheme: hqc-192-1-cca2
+        pretty_name_full: HQC-192-1-CCA2
+      -
+        scheme: "192_2_cca2"
+        pqclean_scheme: hqc-192-2-cca2
+        pretty_name_full: HQC-192-2-CCA2
+      -
+        scheme: "256_1_cca2"
+        pqclean_scheme: hqc-256-1-cca2
+        pretty_name_full: HQC-256-1-CCA2
+      -
+        scheme: "256_2_cca2"
+        pqclean_scheme: hqc-256-2-cca2
+        pretty_name_full: HQC-256-2-CCA2
+      -
+        scheme: "256_3_cca2"
+        pqclean_scheme: hqc-256-3-cca2
+        pretty_name_full: HQC-256-3-CCA2
+  -
+    name: kyber
+    default_implementation: clean
+    schemes:
+      -
+        scheme: "512"
+        pqclean_scheme: kyber512
+        upstream_location: KYBER
+        pretty_name_full: Kyber512
+      -
+        scheme: "768"
+        pqclean_scheme: kyber768
+        upstream_location: KYBER
+        pretty_name_full: Kyber768
+      -
+        scheme: "1024"
+        pqclean_scheme: kyber1024
+        upstream_location: KYBER
+        pretty_name_full: Kyber1024
+      -
+        scheme: "512_90s"
+        pqclean_scheme: kyber512-90s
+        upstream_location: KYBER
+        pretty_name_full: Kyber512-90s
+      -
+        scheme: "768_90s"
+        pqclean_scheme: kyber768-90s
+        upstream_location: KYBER
+        pretty_name_full: Kyber768-90s
+      -
+        scheme: "1024_90s"
+        pqclean_scheme: kyber1024-90s
+        upstream_location: KYBER
+        pretty_name_full: Kyber1024-90s
+  -
+    name: newhope
+    default_implementation: clean
+    schemes:
+      -
+        scheme: "512cca"
+        pqclean_scheme: newhope512cca
+        pretty_name_full: NewHope-512-CCA
+      -
+        scheme: "1024cca"
+        pqclean_scheme: newhope1024cca
+        pretty_name_full: NewHope-1024-CCA
+  -
+    name: ntru
+    default_implementation: clean
+    schemes:
+      -
+        scheme: hps2048509
+        pqclean_scheme: ntruhps2048509
+        pretty_name_full: NTRU-HPS-2048-509
+      -
+        scheme: hps2048677
+        pqclean_scheme: ntruhps2048677
+        pretty_name_full: NTRU-HPS-2048-677
+      -
+        scheme: hps4096821
+        pqclean_scheme: ntruhps4096821
+        pretty_name_full: NTRU-HPS-4096-821
+      -
+        scheme: hrss701
+        pqclean_scheme: ntruhrss701
+        pretty_name_full: NTRU-HRSS-701
+  -
+    name: saber
+    default_implementation: clean
+    schemes:
+      -
+        scheme: lightsaber
+        pqclean_scheme: lightsaber
+        pretty_name_full: LightSaber-KEM
+      -
+        scheme: saber
+        pqclean_scheme: saber
+        pretty_name_full: Saber-KEM
+      -
+        scheme: firesaber
+        pqclean_scheme: firesaber
+        pretty_name_full: FireSaber-KEM
+  -
+    name: threebears
+    default_implementation: clean
+    schemes:
+      -
+        scheme: babybear
+        pqclean_scheme: babybear
+        pretty_name_full: BabyBear
+      -
+        scheme: babybear_ephem
+        pqclean_scheme: babybear-ephem
+        pretty_name_full: BabyBearEphem
+      -
+        scheme: mamabear
+        pqclean_scheme: mamabear
+        pretty_name_full: MamaBear
+      -
+        scheme: mamabear_ephem
+        pqclean_scheme: mamabear-ephem
+        pretty_name_full: MamaBearEphem
+      -
+        scheme: papabear
+        pqclean_scheme: papabear
+        pretty_name_full: PapaBear
+      -
+        scheme: papabear_ephem
+        pqclean_scheme: papabear-ephem
+        pretty_name_full: PapaBearEphem
+sigs:
+  -
+    name: dilithium
+    default_implementation: clean
+    schemes:
+      -
+        scheme: "2"
+        pqclean_scheme: dilithium2
+        upstream_location: DILITHIUM
+        pretty_name_full: DILITHIUM_2
+        signed_msg_order: sig_then_msg
+      -
+        scheme: "3"
+        pqclean_scheme: dilithium3
+        upstream_location: DILITHIUM
+        pretty_name_full: DILITHIUM_3
+        signed_msg_order: sig_then_msg
+      -
+        scheme: "4"
+        pqclean_scheme: dilithium4
+        upstream_location: DILITHIUM
+        pretty_name_full: DILITHIUM_4
+        signed_msg_order: sig_then_msg
+  -
+    name: falcon
+    default_implementation: clean
+    schemes:
+      -
+        scheme: "512"
+        pqclean_scheme: falcon-512
+        pretty_name_full: Falcon-512
+        signed_msg_order: falcon
+      -
+        scheme: "1024"
+        pqclean_scheme: falcon-1024
+        pretty_name_full: Falcon-1024
+        signed_msg_order: falcon
+  -
+    name: mqdss
+    default_implementation: clean
+    schemes:
+      -
+        scheme: "31_48"
+        pqclean_scheme: mqdss-48
+        pretty_name_full: MQDSS-31-48
+        signed_msg_order: sig_then_msg
+      -
+        scheme: "31_64"
+        pqclean_scheme: mqdss-64
+        pretty_name_full: MQDSS-31-64
+        signed_msg_order: sig_then_msg
+  -
+    name: rainbow
+    default_implementation: clean
+    schemes:
+      -
+        scheme: "Ia_classic"
+        pqclean_scheme: rainbowIa-classic
+        pretty_name_full: Rainbow-Ia-Classic
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "Ia_cyclic"
+        pqclean_scheme: rainbowIa-cyclic
+        pretty_name_full: Rainbow-Ia-Cyclic
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "Ia_cyclic_compressed"
+        pqclean_scheme: rainbowIa-cyclic-compressed
+        pretty_name_full: Rainbow-Ia-Cyclic-Compressed
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "IIIc_classic"
+        pqclean_scheme: rainbowIIIc-classic
+        pretty_name_full: Rainbow-IIIc-Classic
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "IIIc_cyclic"
+        pqclean_scheme: rainbowIIIc-cyclic
+        pretty_name_full: Rainbow-IIIc-Cyclic
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "IIIc_cyclic_compressed"
+        pqclean_scheme: rainbowIIIc-cyclic-compressed
+        pretty_name_full: Rainbow-IIIc-Cyclic-Compressed
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "Vc_classic"
+        pqclean_scheme: rainbowVc-classic
+        pretty_name_full: Rainbow-Vc-Classic
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "Vc_cyclic"
+        pqclean_scheme: rainbowVc-cyclic
+        pretty_name_full: Rainbow-Vc-Cyclic
+        signed_msg_order: msg_then_sig
+      -
+        scheme: "Vc_cyclic_compressed"
+        pqclean_scheme: rainbowVc-cyclic-compressed
+        pretty_name_full: Rainbow-Vc-Cyclic-Compressed
+        signed_msg_order: msg_then_sig
+  -
+    name: sphincs
+    default_implementation: clean
+    schemes:
+      -
+        scheme: haraka_128f_robust
+        pqclean_scheme: sphincs-haraka-128f-robust
+        pretty_name_full: SPHINCS+-Haraka-128f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_128f_simple
+        pqclean_scheme: sphincs-haraka-128f-simple
+        pretty_name_full: SPHINCS+-Haraka-128f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_128s_robust
+        pqclean_scheme: sphincs-haraka-128s-robust
+        pretty_name_full: SPHINCS+-Haraka-128s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_128s_simple
+        pqclean_scheme: sphincs-haraka-128s-simple
+        pretty_name_full: SPHINCS+-Haraka-128s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_192f_robust
+        pqclean_scheme: sphincs-haraka-192f-robust
+        pretty_name_full: SPHINCS+-Haraka-192f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_192f_simple
+        pqclean_scheme: sphincs-haraka-192f-simple
+        pretty_name_full: SPHINCS+-Haraka-192f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_192s_robust
+        pqclean_scheme: sphincs-haraka-192s-robust
+        pretty_name_full: SPHINCS+-Haraka-192s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_192s_simple
+        pqclean_scheme: sphincs-haraka-192s-simple
+        pretty_name_full: SPHINCS+-Haraka-192s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_256f_robust
+        pqclean_scheme: sphincs-haraka-256f-robust
+        pretty_name_full: SPHINCS+-Haraka-256f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_256f_simple
+        pqclean_scheme: sphincs-haraka-256f-simple
+        pretty_name_full: SPHINCS+-Haraka-256f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_256s_robust
+        pqclean_scheme: sphincs-haraka-256s-robust
+        pretty_name_full: SPHINCS+-Haraka-256s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: haraka_256s_simple
+        pqclean_scheme: sphincs-haraka-256s-simple
+        pretty_name_full: SPHINCS+-Haraka-256s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_128f_robust
+        pqclean_scheme: sphincs-sha256-128f-robust
+        pretty_name_full: SPHINCS+-SHA256-128f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_128f_simple
+        pqclean_scheme: sphincs-sha256-128f-simple
+        pretty_name_full: SPHINCS+-SHA256-128f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_128s_robust
+        pqclean_scheme: sphincs-sha256-128s-robust
+        pretty_name_full: SPHINCS+-SHA256-128s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_128s_simple
+        pqclean_scheme: sphincs-sha256-128s-simple
+        pretty_name_full: SPHINCS+-SHA256-128s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_192f_robust
+        pqclean_scheme: sphincs-sha256-192f-robust
+        pretty_name_full: SPHINCS+-SHA256-192f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_192f_simple
+        pqclean_scheme: sphincs-sha256-192f-simple
+        pretty_name_full: SPHINCS+-SHA256-192f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_192s_robust
+        pqclean_scheme: sphincs-sha256-192s-robust
+        pretty_name_full: SPHINCS+-SHA256-192s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_192s_simple
+        pqclean_scheme: sphincs-sha256-192s-simple
+        pretty_name_full: SPHINCS+-SHA256-192s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_256f_robust
+        pqclean_scheme: sphincs-sha256-256f-robust
+        pretty_name_full: SPHINCS+-SHA256-256f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_256f_simple
+        pqclean_scheme: sphincs-sha256-256f-simple
+        pretty_name_full: SPHINCS+-SHA256-256f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_256s_robust
+        pqclean_scheme: sphincs-sha256-256s-robust
+        pretty_name_full: SPHINCS+-SHA256-256s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: sha256_256s_simple
+        pqclean_scheme: sphincs-sha256-256s-simple
+        pretty_name_full: SPHINCS+-SHA256-256s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_128f_robust
+        pqclean_scheme: sphincs-shake256-128f-robust
+        pretty_name_full: SPHINCS+-SHAKE256-128f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_128f_simple
+        pqclean_scheme: sphincs-shake256-128f-simple
+        pretty_name_full: SPHINCS+-SHAKE256-128f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_128s_robust
+        pqclean_scheme: sphincs-shake256-128s-robust
+        pretty_name_full: SPHINCS+-SHAKE256-128s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_128s_simple
+        pqclean_scheme: sphincs-shake256-128s-simple
+        pretty_name_full: SPHINCS+-SHAKE256-128s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_192f_robust
+        pqclean_scheme: sphincs-shake256-192f-robust
+        pretty_name_full: SPHINCS+-SHAKE256-192f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_192f_simple
+        pqclean_scheme: sphincs-shake256-192f-simple
+        pretty_name_full: SPHINCS+-SHAKE256-192f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_192s_robust
+        pqclean_scheme: sphincs-shake256-192s-robust
+        pretty_name_full: SPHINCS+-SHAKE256-192s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_192s_simple
+        pqclean_scheme: sphincs-shake256-192s-simple
+        pretty_name_full: SPHINCS+-SHAKE256-192s-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_256f_robust
+        pqclean_scheme: sphincs-shake256-256f-robust
+        pretty_name_full: SPHINCS+-SHAKE256-256f-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_256f_simple
+        pqclean_scheme: sphincs-shake256-256f-simple
+        pretty_name_full: SPHINCS+-SHAKE256-256f-simple
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_256s_robust
+        pqclean_scheme: sphincs-shake256-256s-robust
+        pretty_name_full: SPHINCS+-SHAKE256-256s-robust
+        signed_msg_order: sig_then_msg
+      -
+        scheme: shake256_256s_simple
+        pqclean_scheme: sphincs-shake256-256s-simple
+        pretty_name_full: SPHINCS+-SHAKE256-256s-simple
+        signed_msg_order: sig_then_msg

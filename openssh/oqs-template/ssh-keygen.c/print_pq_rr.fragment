@@ -1,0 +1,7 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+			n += do_print_resource_record(pw,
+                 _PATH_HOST_{{ variant['name'] }}_KEY_FILE, rr_hostname);
+    {%- endfor %}
+{%- endfor %}
+

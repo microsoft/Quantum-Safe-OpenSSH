@@ -1,0 +1,60 @@
+# Dutch translation of openssh debconf templates.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the openssh package.
+# Frans Spiesschaert <Frans.Spiesschaert@yucom.be>, 2014.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssh\n"
+"Report-Msgid-Bugs-To: openssh@packages.debian.org\n"
+"POT-Creation-Date: 2014-03-20 02:06+0000\n"
+"PO-Revision-Date: 2014-10-03 23:54+0200\n"
+"Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
+"Language-Team: Debian Dutch l10n Team <debian-l10n-dutch@lists.debian.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid "Disable SSH password authentication for root?"
+msgstr ""
+"Wachtwoordauthenticatie over SSH voor de systeembeheerder uitschakelen?"
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"Previous versions of openssh-server permitted logging in as root over SSH "
+"using password authentication. The default for new installations is now "
+"\"PermitRootLogin prohibit-password\", which disables password "
+"authentication for root without breaking systems that have explicitly "
+"configured SSH public key authentication for root."
+msgstr ""
+"Eerdere versies van de openssh-server lieten de systeembeheerder toe om zich "
+"over SSH te authenticeren met een wachtwoord. Voor nieuwe installaties is de "
+"standaard nu \"PermitRootLogin prohibit-password\". Deze standaardinstelling "
+"maakt het voor de systeembeheerder onmogelijk om zich via een wachtwoord te "
+"authenticeren. Deze instelling heeft geen impact op systemen waarbij de SSH-"
+"configuratie expliciet vereist dat de systeembeheerder zich authenticeert "
+"via een publieke sleutel."
+
+#. Type: boolean
+#. Description
+#: ../openssh-server.templates:1001
+msgid ""
+"This change makes systems more secure against brute-force password "
+"dictionary attacks on the root user (a very common target for such attacks). "
+"However, it may break systems that are set up with the expectation of being "
+"able to SSH as root using password authentication. You should only make this "
+"change if you do not need to do that."
+msgstr ""
+"Deze wijziging maakt systemen veiliger tegenover aanvallen met brute kracht "
+"(met een wachtwoordenwoordenboek) op de systeembeheerder, een zeer courant "
+"doelwit voor zulke aanvallen. Maar het kan systemen onbruikbaar maken die "
+"ingesteld werden vanuit de verwachting dat de systeembeheerder SSH kan "
+"gebruiken met authenticatie via wachtwoord. Enkel wanneer u dit laatste niet "
+"nodig heeft, zou u deze wijziging kunnen doorvoeren."

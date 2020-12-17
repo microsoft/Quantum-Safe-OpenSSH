@@ -1,0 +1,39 @@
+#! /bin/sh
+# Run installed OpenSSH regression tests.
+
+tmp="$1"
+if [ -z "$tmp" ]; then
+	tmp="$(mktemp -d)"
+	cleanup () {
+		rm -rf "$tmp"
+	}
+	trap cleanup EXIT
+fi
+
+# Copy the regression tests to a fresh directory; this is easier than trying
+# to pick apart which ones need write access.
+cp -a /usr/lib/openssh/regress "$tmp/regress"
+
+ret=0
+make -C "$tmp/regress" \
+	.OBJDIR="$tmp/regress" \
+	.CURDIR="$tmp/regress" \
+	BUILDDIR="$tmp/regress" \
+	OBJ="$tmp/regress" \
+	SUDO=sudo \
+	TEST_SHELL=sh \
+	TEST_SSH_SFTPSERVER=/usr/lib/openssh/sftp-server \
+	TEST_SSH_PLINK=plink \
+	TEST_SSH_PUTTYGEN=puttygen \
+	TEST_SSH_CONCH=conch \
+	TEST_SSH_IPV6=yes \
+	TEST_SSH_ECC=yes \
+	tests interop-tests </dev/zero || ret="$?"
+if [ "$ret" -ne 0 ]; then
+	for log in failed-regress.log failed-ssh.log failed-sshd.log; do
+		if [ -e "$tmp/regress/$log" ]; then
+			tail -v -n+0 "$tmp/regress/$log"
+		fi
+	done
+fi
+exit "$ret"

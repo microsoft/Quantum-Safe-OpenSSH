@@ -1,0 +1,9 @@
+
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+        {%- for classical_alg in variant['mix_with'] %}
+	{ "ssh-{{ classical_alg.name }}-{{ variant['name']|lower|replace('_','') }}", "{{ classical_alg.name|upper }}_{{ variant['name']|replace('_','') }}", NULL, KEY_{{ classical_alg.name|upper }}_{{ variant['name'] }}, {% if classical_alg.curve -%}{{ classical_alg.curve }}{%- else -%}0{%- endif -%}, 0, 0 },
+        {%- endfor -%}
+    {%- endfor %}
+{%- endfor %}
+

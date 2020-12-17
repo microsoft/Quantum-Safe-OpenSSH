@@ -1,0 +1,11 @@
+{# Start at 10 after counting OpenSSH instrinsics #}
+{%- set count = namespace(val=10) -%}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- set count.val = count.val + 1 -%}
+        {# Count hybrids #}
+        {%- set count.val = count.val + variant['mix_with']|length -%}
+    {%- endfor -%}
+{%- endfor %}
+		sensitive_data.nkeys = {{ count.val }};
+

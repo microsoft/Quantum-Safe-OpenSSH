@@ -1,0 +1,35 @@
+{%- set with_rsa3072 = [] -%}
+{%- set with_p256 = [] -%}
+{%- set with_p384 = [] -%}
+{%- set with_p521 = [] -%}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- for classical_alg in variant['mix_with'] -%}
+            {%- if classical_alg.name == 'rsa3072' -%}
+                {%- do with_rsa3072.append(variant) -%}
+            {%- elif classical_alg.name == 'p256' -%}
+                {%- do with_p256.append(variant) -%}
+            {%- elif classical_alg.name == 'p384' -%}
+                {%- do with_p384.append(variant) -%}
+            {%- elif classical_alg.name == 'p521' -%}
+                {%- do with_p521.append(variant) -%}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+#define CASE_KEY_RSA_HYBRID \
+{%- for pq_alg in with_rsa3072 %}
+	case KEY_RSA3072_{{ pq_alg['name'] }}{%- if not loop.last %}: \{% endif %}
+{%- endfor %}
+
+#define CASE_KEY_ECDSA_HYBRID \
+{%- for pq_alg in with_p256 %}
+	case KEY_P256_{{ pq_alg['name'] }}{%- if not loop.last or with_p384 or with_p521 %}: \ {%-endif %}
+{%- endfor %}
+{%- for pq_alg in with_p384 %}
+	case KEY_P384_{{ pq_alg['name'] }}{%- if not loop.last or with_p521 %}: \{% endif %}
+{%- endfor %}
+{%- for pq_alg in with_p521 %}
+	case KEY_P521_{{ pq_alg['name'] }}{%- if not loop.last %}: \{% endif %}
+{%- endfor %}
+

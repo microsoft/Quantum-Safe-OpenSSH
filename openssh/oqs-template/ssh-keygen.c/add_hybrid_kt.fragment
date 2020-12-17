@@ -1,0 +1,28 @@
+{%- set with_rsa = [] -%}
+{%- set with_ecdsa = [] -%}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- for classical_alg in variant['mix_with'] -%}
+            {%- if classical_alg.name == 'rsa3072' -%}
+                {%- do with_rsa.append(variant) -%}
+            {%- elif classical_alg.name == 'p256' -%}
+                {%- do with_ecdsa.append({'name': variant['name'], 'curve':'p256'}) -%}
+            {%- elif classical_alg.name == 'p384' -%}
+                {%- do with_ecdsa.append({'name': variant['name'], 'curve':'p384'}) -%}
+            {%- elif classical_alg.name == 'p521' -%}
+                {%- do with_ecdsa.append({'name': variant['name'], 'curve':'p521'}) -%}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+#ifdef WITH_OPENSSL
+{%- for pq_alg in with_rsa %}
+		{ "rsa3072_{{ pq_alg['name']|lower|replace('_','') }}", "RSA3072_{{ pq_alg['name'] }}", _PATH_HOST_RSA3072_{{ pq_alg['name'] }}_KEY_FILE },
+{%- endfor %}
+#ifdef OPENSSL_HAS_ECC
+{%- for pq_alg in with_ecdsa %}
+		{ "{{ pq_alg['curve']}}_{{ pq_alg['name']|lower|replace('_','') }}", "{{ pq_alg['curve']|upper }}_{{ pq_alg['name'] }}", _PATH_HOST_{{ pq_alg['curve']|upper }}_{{ pq_alg['name'] }}_KEY_FILE },
+{%- endfor %}
+#endif /* OPENSSL_HAS_ECC */
+#endif /* WITH_OPENSSL */
+

@@ -1,0 +1,11 @@
+regress /usr/lib/openssh
+debian/build-deb/regress/check-perm /usr/lib/openssh/regress
+debian/build-deb/regress/misc /usr/lib/openssh/regress
+debian/build-deb/regress/mkdtemp /usr/lib/openssh/regress
+debian/build-deb/regress/modpipe /usr/lib/openssh/regress
+debian/build-deb/regress/netcat /usr/lib/openssh/regress
+debian/build-deb/regress/setuid-allowed /usr/lib/openssh/regress
+debian/build-deb/regress/unittests /usr/lib/openssh/regress
+
+debian/build-deb/config.h /usr/lib/openssh/regress
+debian/run-tests /usr/lib/openssh/regress

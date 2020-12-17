@@ -1,0 +1,148 @@
+From 96c85e746d4f94c7d2748a200e5817ad8a987918 Mon Sep 17 00:00:00 2001
+From: Colin Watson <cjwatson@debian.org>
+Date: Sun, 9 Feb 2014 16:10:09 +0000
+Subject: Adjust various OpenBSD-specific references in manual pages
+
+No single bug reference for this patch, but history includes:
+ http://bugs.debian.org/154434 (login.conf(5))
+ http://bugs.debian.org/513417 (/etc/rc)
+ http://bugs.debian.org/530692 (ssl(8))
+ https://bugs.launchpad.net/bugs/456660 (ssl(8))
+
+Forwarded: not-needed
+Last-Update: 2017-10-04
+
+Patch-Name: openbsd-docs.patch
+---
+ moduli.5      |  4 ++--
+ ssh-keygen.1  | 12 ++++--------
+ ssh.1         |  4 ++++
+ sshd.8        |  5 ++---
+ sshd_config.5 |  3 +--
+ 5 files changed, 13 insertions(+), 15 deletions(-)
+
+diff --git a/moduli.5 b/moduli.5
+index ef0de0850..149846c8c 100644
+--- a/moduli.5
++++ b/moduli.5
+@@ -21,7 +21,7 @@
+ .Nd Diffie-Hellman moduli
+ .Sh DESCRIPTION
+ The
+-.Pa /etc/moduli
++.Pa /etc/ssh/moduli
+ file contains prime numbers and generators for use by
+ .Xr sshd 8
+ in the Diffie-Hellman Group Exchange key exchange method.
+@@ -110,7 +110,7 @@ first estimates the size of the modulus required to produce enough
+ Diffie-Hellman output to sufficiently key the selected symmetric cipher.
+ .Xr sshd 8
+ then randomly selects a modulus from
+-.Fa /etc/moduli
++.Fa /etc/ssh/moduli
+ that best meets the size requirement.
+ .Sh SEE ALSO
+ .Xr ssh-keygen 1 ,
+diff --git a/ssh-keygen.1 b/ssh-keygen.1
+index bfa2eb5f3..da6b5ed76 100644
+--- a/ssh-keygen.1
++++ b/ssh-keygen.1
+@@ -176,9 +176,7 @@ key in
+ .Pa ~/.ssh/id_ed25519
+ or
+ .Pa ~/.ssh/id_rsa .
+-Additionally, the system administrator may use this to generate host keys,
+-as seen in
+-.Pa /etc/rc .
++Additionally, the system administrator may use this to generate host keys.
+ .Pp
+ Normally this program generates the key and asks for a file in which
+ to store the private key.
+@@ -229,9 +227,7 @@ If
+ .Fl f
+ has also been specified, its argument is used as a prefix to the
+ default path for the resulting host key files.
+-This is used by
+-.Pa /etc/rc
+-to generate new host keys.
++This is used by system administration scripts to generate new host keys.
+ .It Fl a Ar rounds
+ When saving a private key this option specifies the number of KDF
+ (key derivation function) rounds used.
+@@ -677,7 +673,7 @@ option.
+ Valid generator values are 2, 3, and 5.
+ .Pp
+ Screened DH groups may be installed in
+-.Pa /etc/moduli .
++.Pa /etc/ssh/moduli .
+ It is important that this file contains moduli of a range of bit lengths and
+ that both ends of a connection share common moduli.
+ .Sh CERTIFICATES
+@@ -877,7 +873,7 @@ on all machines
+ where the user wishes to log in using public key authentication.
+ There is no need to keep the contents of this file secret.
+ .Pp
+-.It Pa /etc/moduli
++.It Pa /etc/ssh/moduli
+ Contains Diffie-Hellman groups used for DH-GEX.
+ The file format is described in
+ .Xr moduli 5 .
+diff --git a/ssh.1 b/ssh.1
+index 81f29af43..5dfad6daa 100644
+--- a/ssh.1
++++ b/ssh.1
+@@ -860,6 +860,10 @@ implements public key authentication protocol automatically,
+ using one of the DSA, ECDSA, Ed25519 or RSA algorithms.
+ The HISTORY section of
+ .Xr ssl 8
++(on non-OpenBSD systems, see
++.nh
++http://www.openbsd.org/cgi\-bin/man.cgi?query=ssl&sektion=8#HISTORY)
++.hy
+ contains a brief discussion of the DSA and RSA algorithms.
+ .Pp
+ The file
+diff --git a/sshd.8 b/sshd.8
+index 57a7fd66b..4abc01d66 100644
+--- a/sshd.8
++++ b/sshd.8
+@@ -65,7 +65,7 @@ over an insecure network.
+ .Nm
+ listens for connections from clients.
+ It is normally started at boot from
+-.Pa /etc/rc .
++.Pa /etc/init.d/ssh .
+ It forks a new
+ daemon for each incoming connection.
+ The forked daemons handle
+@@ -884,7 +884,7 @@ This file is for host-based authentication (see
+ .Xr ssh 1 ) .
+ It should only be writable by root.
+ .Pp
+-.It Pa /etc/moduli
++.It Pa /etc/ssh/moduli
+ Contains Diffie-Hellman groups used for the "Diffie-Hellman Group Exchange"
+ key exchange method.
+ The file format is described in
+@@ -982,7 +982,6 @@ The content of this file is not sensitive; it can be world-readable.
+ .Xr ssh-keyscan 1 ,
+ .Xr chroot 2 ,
+ .Xr hosts_access 5 ,
+-.Xr login.conf 5 ,
+ .Xr moduli 5 ,
+ .Xr sshd_config 5 ,
+ .Xr inetd 8 ,
+diff --git a/sshd_config.5 b/sshd_config.5
+index 37e6be38f..23f71fd1d 100644
+--- a/sshd_config.5
++++ b/sshd_config.5
+@@ -395,8 +395,7 @@ Certificates signed using other algorithms will not be accepted for
+ public key or host-based authentication.
+ .It Cm ChallengeResponseAuthentication
+ Specifies whether challenge-response authentication is allowed (e.g. via
+-PAM or through authentication styles supported in
+-.Xr login.conf 5 )
++PAM).
+ The default is
+ .Cm yes .
+ .It Cm ChrootDirectory

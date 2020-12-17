@@ -1,0 +1,13 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+#define _PATH_HOST_{{ variant['name'] }}_KEY_FILE SSHDIR "/ssh_host_{{ variant['name']|lower|replace('_','') }}_key"
+    {%- endfor %}
+{%- endfor %}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- for classical_alg in variant['mix_with'] %}
+#define _PATH_HOST_{{ classical_alg.name|upper }}_{{ variant['name'] }}_KEY_FILE SSHDIR "/ssh_host_{{ classical_alg.name }}_{{ variant['name']|lower|replace('_','') }}_key"
+        {%- endfor -%}
+    {%- endfor %}
+{%- endfor %}
+

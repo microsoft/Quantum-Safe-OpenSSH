@@ -1,0 +1,22 @@
+{% set count = namespace(val=5) %}
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+#define KT_{{ variant['name'] }} ((uint64_t)1<<{{ count.val }})
+        {%- set count.val = count.val + 1 -%}
+    {%- endfor %}
+{%- endfor %}
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+        {%- for classical_alg in variant['mix_with'] %}
+#define KT_{{ classical_alg.name|upper }}_{{ variant['name'] }} ((uint64_t)1<<{{ count.val }})
+            {%- set count.val = count.val + 1 -%}
+        {%- endfor -%}
+    {%- endfor %}
+{%- endfor %}
+
+{% set last_sig = config['sigs']|last -%}
+{%- set last_variant = last_sig['variants']|last %}
+{%- set last_classical_alg = last_variant['mix_with']|last -%}
+#define KT_MIN KT_DSA
+#define KT_MAX KT_{{ last_classical_alg.name|upper }}_{{ last_variant['name'] }}
+

@@ -1,0 +1,23 @@
+{%- set with_p384 = [] -%}
+{%- set with_p521 = [] -%}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- for classical_alg in variant['mix_with'] -%}
+            {%- if classical_alg.name == 'p384' -%}
+                {%- do with_p384.append(variant) -%}
+            {%- elif classical_alg.name == 'p521' -%}
+                {%- do with_p521.append(variant) -%}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+{%- for pq_alg in with_p384 %}
+		case KEY_P384_{{ pq_alg['name'] }}:
+{%- endfor %}
+			*bitsp = 384;
+			break;
+{%- for pq_alg in with_p521 %}
+		case KEY_P521_{{ pq_alg['name'] }}:
+{%- endfor %}
+			*bitsp = 521;
+

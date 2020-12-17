@@ -1,0 +1,13 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+		KEY_{{ variant['name'] }},
+    {%- endfor %}
+{%- endfor %}
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+        {%- for classical_alg in variant['mix_with'] %}
+		KEY_{{ classical_alg.name|upper }}_{{ variant['name'] }},
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+

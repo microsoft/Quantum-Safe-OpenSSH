@@ -1,0 +1,6 @@
+
+#define KEX_HYBRID_METHODS \
+{%- for kem in config['kems'] %}
+    KEX_HYBRID_METHOD_{{ kem['family'] }}{% if not loop.last -%}{{ " " }}\{%- endif -%}
+{%- endfor %}
+

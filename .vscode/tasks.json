@@ -1,0 +1,444 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "liboqs: cmake",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-GNinja",
+                "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+                "-DCMAKE_INSTALL_PREFIX=${workspaceFolder}/liboqs",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                // "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                // "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/liboqs/build",
+                "env": {}
+            },
+            "problemMatcher": [],
+            "group": "none"
+        },
+        {
+            "type": "shell",
+            "label": "liboqs: make",
+            "command": "ninja",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/liboqs/build"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "dependsOn": [
+                "liboqs: cmake"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "liboqs: install",
+            "command": "ninja",
+            "args": [
+                "install"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/liboqs/build"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "dependsOn": [
+                "liboqs: make"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Liboqs: Library: Build",
+            "command": "ls ./lib",
+            "options": {
+                "cwd": "${workspaceFolder}/liboqs"
+            },
+            "args": [],
+            "problemMatcher": [],
+            "group": "build",
+            "dependsOn": [
+                "liboqs: install"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "liboqs: clean",
+            "command": "ninja",
+            "args": [
+                "-t",
+                "clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/liboqs/build"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "dependsOn": []
+        },
+
+        // ============================================================================================================
+
+        {
+            "type": "shell",
+            "label": "OpenSSH: Binaries: Clean",
+            "command": "debian/rules",
+            "args": [
+                "clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/openssh",
+                "env": {}
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "dependsOn": []
+        },
+        {
+            "type": "shell",
+            "label": "OpenSSH: Binaries: Build",
+            "command": "debian/rules",
+            "args": [
+                "build",
+                " --with=autoreconf,systemd"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/openssh",
+                "env": {
+                    "DEB_BUILD_OPTIONS": "nocheck noopt"
+                }
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "dependsOn": []
+        },
+
+        // ============================================================================================================
+
+        {
+            "type": "shell",
+            "label": "OpenSSH: Package: Build",
+            "command": "dpkg-buildpackage",
+            "args": [
+                // "--prepend-path=/usr/lib/ccache",
+                "-rfakeroot",
+                "-us", // unsigned source package
+                "-uc", // unsigned .changes file.
+                "-b", // binary-only, no source files.
+                // move the deb packages from the default outer folder to a packages folder
+                "--hook-done='mkdir -p ../packages/.; mv ../*.deb ../*.ddeb ../*.udeb ../*.buildinfo ../*changes ../packages/. || true'",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/openssh",
+                "env": {
+                    "DEB_BUILD_OPTIONS": "nocheck", // skip tests
+                    "DEB_BUILD_PROFILES": "noudeb" // skip udeb packages
+                }
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "dependsOn": []
+        },
+
+        // ============================================================================================================
+
+        {
+            "type": "shell",
+            "label": "Set Algorithms",
+            "command": [
+                // Uses the VS Code prompt to set KEX and Public Key algoritms in the /.vscode/.env file
+                "ENVFILE=${workspaceFolder}/.vscode/.env;",
+                "KEXALG=${input:kexAlgorithm};",
+                "if [[ $KEXALG = 'default' ]] ; then KEXALG=''; else KEXALG=\"-oKexAlgorithms=${KEXALG}@openquantumsafe.org\"; fi;",
+                "echo KEXALG=$KEXALG > $ENVFILE;",
+                "HOSTKEYALG=${input:hostKeyAlgorithm};",
+                "if [[ $HOSTKEYALG = 'default' ]] ; then HOSTKEYALG=''; else HOSTKEYALG=\"-oHostKeyAlgorithms=${HOSTKEYALG}\";  fi;",
+                "echo HOSTKEYALG=$HOSTKEYALG >> $ENVFILE;",
+                "PUBLICKEYALG=${input:publicKeyAlgorithm};",
+                "if [[ $PUBLICKEYALG = 'default' ]] ; then PUBLICKEYALG=''; else PUBLICKEYALG=\"-oPubkeyAcceptedKeyTypes=${PUBLICKEYALG}\";  fi;",
+                "echo PUBLICKEYALG=$PUBLICKEYALG >> $ENVFILE;",
+            ],
+            "args": [],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "never",
+            }
+        },
+        {
+            "type": "shell",
+            "label": "Generate SSH Key-Pair",
+            "command": [
+                "KEYGENALG=${input:publicKeyAlgorithm};",
+                "if [[ $KEYGENALG = 'default' ]] ; then KEYGENALG='ssh-rsa'; fi;",
+                "KEYGENPATH=${KEYGENALG/ssh-/id_};",
+                "KEYGENPATH=~/.ssh/${KEYGENPATH/-/_};",
+                "if [[ ! -f $KEYGENPATH ]]; then ",
+                "  echo -t $KEYGENALG -f $KEYGENPATH -N '';",
+                "  ${workspaceFolder}/bin/client/ssh-keygen -t $KEYGENALG -f $KEYGENPATH -N '';",
+                "  cat $KEYGENPATH.pub >> ~/.ssh/authorized_keys;",
+                "  echo -e \"\\e[32m$(cat ~/.ssh/authorized_keys | grep $KEYGENALG)\\e[0m\";",
+                "else ",
+                "  echo -e \"\\e[31m${KEYGENALG} key-pair already exists. New key-pair will not be created.\\e[0m\";",
+                "fi;",
+                "unset KEYGENALG KEYGENPATH;",
+            ],
+            "args": [],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+            }
+        },
+
+        // ============================================================================================================
+
+        {
+            "label": "Test: liboqs",
+            "group": "test",
+            "type": "shell",
+            "command": "ninja run_tests",
+            "options": {
+                "cwd": "${workspaceFolder}/liboqs/build"
+            },
+        },
+        {
+            "label": "Test: openssh full (takes a very long time)",
+            "group": "test",
+            "type": "shell",
+            "command": "make tests",
+            "options": {
+                "cwd": "${workspaceFolder}/openssh/debian/build-deb"
+            },
+        },
+        {
+            "label": "Test: openssh unit",
+            "group": "test",
+            "type": "shell",
+            "command": "make unit",
+            "options": {
+                "cwd": "${workspaceFolder}/openssh/debian/build-deb"
+            },
+        }
+    ],
+    
+    // ================================================================================================================
+        
+    "version": "2.0.0",
+    "inputs": [
+        {
+            "type": "pickString",
+            "id": "kexAlgorithm",
+            "description": "Select Key-Exchange (KEX)",
+            "options": [
+                "default",
+                "ecdh-nistp384-sike-p434-sha384",
+                "ecdh-nistp384-sike-p503-sha384",
+                "ecdh-nistp384-sike-p610-sha384",
+                "ecdh-nistp384-sike-p751-sha384",
+                "ecdh-nistp384-sike-p434-compressed-sha384",
+                "ecdh-nistp384-sike-p503-compressed-sha384",
+                "ecdh-nistp384-sike-p610-compressed-sha384",
+                "ecdh-nistp384-sike-p751-compressed-sha384",
+                "ecdh-nistp384-frodo-640-aes-sha384",
+                "ecdh-nistp384-frodo-640-shake-sha384",
+                "ecdh-nistp384-frodo-976-aes-sha384",
+                "ecdh-nistp384-frodo-976-shake-sha384",
+                "ecdh-nistp384-frodo-1344-aes-sha384",
+                "ecdh-nistp384-frodo-1344-shake-sha384",
+                "ecdh-nistp384-bike1-l1-cpa-sha384",
+                "ecdh-nistp384-bike1-l3-cpa-sha384",
+                "ecdh-nistp384-bike1-l1-fo-sha384",
+                "ecdh-nistp384-bike1-l3-fo-sha384",
+                "ecdh-nistp384-classic-mceliece-348864-sha384",
+                "ecdh-nistp384-classic-mceliece-348864f-sha384",
+                "ecdh-nistp384-classic-mceliece-460896-sha384",
+                "ecdh-nistp384-classic-mceliece-460896f-sha384",
+                "ecdh-nistp384-classic-mceliece-6688128-sha384",
+                "ecdh-nistp384-classic-mceliece-6688128f-sha384",
+                "ecdh-nistp384-classic-mceliece-6960119-sha384",
+                "ecdh-nistp384-classic-mceliece-6960119f-sha384",
+                "ecdh-nistp384-classic-mceliece-8192128-sha384",
+                "ecdh-nistp384-classic-mceliece-8192128f-sha384",
+                "ecdh-nistp384-kyber-512-sha384",
+                "ecdh-nistp384-kyber-768-sha384",
+                "ecdh-nistp384-kyber-1024-sha384",
+                "ecdh-nistp384-kyber-512-90s-sha384",
+                "ecdh-nistp384-kyber-768-90s-sha384",
+                "ecdh-nistp384-kyber-1024-90s-sha384",
+                "ecdh-nistp384-ntru-hps-2048-509-sha384",
+                "ecdh-nistp384-ntru-hps-2048-677-sha384",
+                "ecdh-nistp384-ntru-hrss-701-sha384",
+                "ecdh-nistp384-ntru-hps-4096-821-sha384",
+                "ecdh-nistp384-saber-lightsaber-sha384",
+                "ecdh-nistp384-saber-saber-sha384",
+                "ecdh-nistp384-saber-firesaber-sha384",
+                "ecdh-nistp384-sidh-p434-sha384",
+                "ecdh-nistp384-sidh-p503-sha384",
+                "ecdh-nistp384-sidh-p610-sha384",
+                "ecdh-nistp384-sidh-p751-sha384",
+                "ecdh-nistp384-sidh-p434-compressed-sha384",
+                "ecdh-nistp384-sidh-p503-compressed-sha384",
+                "ecdh-nistp384-sidh-p610-compressed-sha384",
+                "ecdh-nistp384-sidh-p751-compressed-sha384",
+                "ecdh-nistp384-hqc-128-1-cca2-sha384",
+                "ecdh-nistp384-hqc-192-1-cca2-sha384",
+                "ecdh-nistp384-hqc-192-2-cca2-sha384",
+                "ecdh-nistp384-hqc-256-1-cca2-sha384",
+                "ecdh-nistp384-hqc-256-2-cca2-sha384",
+                "ecdh-nistp384-hqc-256-3-cca2-sha384",
+                "sike-p434-sha384",
+                "sike-p503-sha384",
+                "sike-p610-sha384",
+                "sike-p751-sha384",
+                "sike-p434-compressed-sha384",
+                "sike-p503-compressed-sha384",
+                "sike-p610-compressed-sha384",
+                "sike-p751-compressed-sha384",
+                "frodo-640-aes-sha384",
+                "frodo-640-shake-sha384",
+                "frodo-976-aes-sha384",
+                "frodo-976-shake-sha384",
+                "frodo-1344-aes-sha384",
+                "frodo-1344-shake-sha384",
+                "bike1-l1-cpa-sha384",
+                "bike1-l3-cpa-sha384",
+                "bike1-l1-fo-sha384",
+                "bike1-l3-fo-sha384",
+                "classic-mceliece-348864-sha384",
+                "classic-mceliece-348864f-sha384",
+                "classic-mceliece-460896-sha384",
+                "classic-mceliece-460896f-sha384",
+                "classic-mceliece-6688128-sha384",
+                "classic-mceliece-6688128f-sha384",
+                "classic-mceliece-6960119-sha384",
+                "classic-mceliece-6960119f-sha384",
+                "classic-mceliece-8192128-sha384",
+                "classic-mceliece-8192128f-sha384",
+                "kyber-512-sha384",
+                "kyber-768-sha384",
+                "kyber-1024-sha384",
+                "kyber-512-90s-sha384",
+                "kyber-768-90s-sha384",
+                "kyber-1024-90s-sha384",
+                "ntru-hps-2048-509-sha384",
+                "ntru-hps-2048-677-sha384",
+                "ntru-hrss-701-sha384",
+                "ntru-hps-4096-821-sha384",
+                "saber-lightsaber-sha384",
+                "saber-saber-sha384",
+                "saber-firesaber-sha384",
+                "sidh-p434-sha384",
+                "sidh-p503-sha384",
+                "sidh-p610-sha384",
+                "sidh-p751-sha384",
+                "sidh-p434-compressed-sha384",
+                "sidh-p503-compressed-sha384",
+                "sidh-p610-compressed-sha384",
+                "sidh-p751-compressed-sha384",
+                "hqc-128-1-cca2-sha384",
+                "hqc-192-1-cca2-sha384",
+                "hqc-192-2-cca2-sha384",
+                "hqc-256-1-cca2-sha384",
+                "hqc-256-2-cca2-sha384",
+                "hqc-256-3-cca2-sha384",
+                "ecdh-sha2-nistp521",
+                "ecdh-sha2-nistp256",
+                "ecdh-sha2-nistp384",
+                "curve25519-sha256",
+            ],
+            "default": "default"
+        },
+        {
+            "type": "pickString",
+            "id": "hostKeyAlgorithm",
+            "description": "Select HostKey Algorithm",
+            "options": [
+                "default",
+                "ssh-rsa3072-picnicl1fs",
+                "ssh-p256-picnicl1fs",
+                "ssh-rsa3072-picnic3l1",
+                "ssh-p256-picnic3l1",
+                "ssh-rsa3072-dilithium2",
+                "ssh-p256-dilithium2",
+                "ssh-rsa3072-falcon512",
+                "ssh-p256-falcon512",
+                "ssh-rsa3072-rainbowiaclassic",
+                "ssh-p256-rainbowiaclassic",
+                "ssh-p384-rainbowiiicclassic",
+                "ssh-p521-rainbowvcclassic",
+                "ssh-rsa3072-sphincsharaka128frobust",
+                "ssh-p256-sphincsharaka128frobust",
+                "ssh-rsa3072-sphincssha256128frobust",
+                "ssh-p256-sphincssha256128frobust",
+                "ssh-rsa3072-sphincsshake256128frobust",
+                "ssh-p256-sphincsshake256128frobust",
+                "ssh-picnicl1fs",
+                "ssh-picnic3l1",
+                "ssh-dilithium2",
+                "ssh-falcon512",
+                "ssh-rainbowiaclassic",
+                "ssh-rainbowiiicclassic",
+                "ssh-rainbowvcclassic",
+                "ssh-sphincsharaka128frobust",
+                "ssh-sphincssha256128frobust",
+                "ssh-sphincsshake256128frobust",
+                "ssh-ed25519",
+                "ssh-rsa",
+                "rsa-sha2-256",
+                "rsa-sha2-512",
+                "ssh-dss",
+                "ecdsa-sha2-nistp256",
+                "ecdsa-sha2-nistp384",
+                "ecdsa-sha2-nistp521",
+            ],
+            "default": "default"
+        },
+        {
+            "type": "pickString",
+            "id": "publicKeyAlgorithm",
+            "description": "Select Public Key Algorithm",
+            "options": [
+                "default",
+                "ssh-rsa3072-picnicl1fs",
+                "ssh-p256-picnicl1fs",
+                "ssh-rsa3072-picnic3l1",
+                "ssh-p256-picnic3l1",
+                "ssh-rsa3072-dilithium2",
+                "ssh-p256-dilithium2",
+                "ssh-rsa3072-falcon512",
+                "ssh-p256-falcon512",
+                "ssh-rsa3072-rainbowiaclassic",
+                "ssh-p256-rainbowiaclassic",
+                "ssh-p384-rainbowiiicclassic",
+                "ssh-p521-rainbowvcclassic",
+                "ssh-rsa3072-sphincsharaka128frobust",
+                "ssh-p256-sphincsharaka128frobust",
+                "ssh-rsa3072-sphincssha256128frobust",
+                "ssh-p256-sphincssha256128frobust",
+                "ssh-rsa3072-sphincsshake256128frobust",
+                "ssh-p256-sphincsshake256128frobust",
+                "ssh-picnicl1fs",
+                "ssh-picnic3l1",
+                "ssh-dilithium2",
+                "ssh-falcon512",
+                "ssh-rainbowiaclassic",
+                "ssh-rainbowiiicclassic",
+                "ssh-rainbowvcclassic",
+                "ssh-sphincsharaka128frobust",
+                "ssh-sphincssha256128frobust",
+                "ssh-sphincsshake256128frobust",
+                "ssh-ed25519",
+                "ssh-rsa",
+                "rsa-sha2-256",
+                "rsa-sha2-512",
+                "ssh-dss",
+                "ecdsa-sha2-nistp256",
+                "ecdsa-sha2-nistp384",
+                "ecdsa-sha2-nistp521",
+            ],
+            "default": "default"
+        }
+    ]
+}

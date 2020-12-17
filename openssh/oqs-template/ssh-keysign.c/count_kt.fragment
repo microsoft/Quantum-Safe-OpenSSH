@@ -1,0 +1,11 @@
+{# Start at 6 after counting OpenSSH instrinsics #}
+{%- set count = namespace(val=5) -%}
+{%- for sig in config['sigs'] -%}
+    {%- for variant in sig['variants'] -%}
+        {%- set count.val = count.val + 1 -%}
+        {# Count hybrids #}
+        {%- set count.val = count.val + variant['mix_with']|length -%}
+    {%- endfor -%}
+{%- endfor %}
+#define NUM_KEYTYPES {{ count.val }}
+

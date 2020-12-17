@@ -1,0 +1,231 @@
+Source: openssh
+Section: net
+Priority: standard
+Maintainer: Debian OpenSSH Maintainers <debian-ssh@lists.debian.org>
+Build-Depends: autotools-dev,
+               debhelper (>= 9.20160709~),
+               dh-autoreconf,
+               dh-exec,
+               dpkg-dev (>= 1.16.1~),
+               libaudit-dev [linux-any],
+               libedit-dev,
+               libgtk-3-dev <!pkg.openssh.nognome>,
+               libkrb5-dev | heimdal-dev,
+               libpam0g-dev | libpam-dev,
+               libselinux1-dev [linux-any],
+               libssl-dev (>= 1.1.0g),
+               libsystemd-dev [linux-any],
+               libwrap0-dev | libwrap-dev,
+               pkg-config,
+               zlib1g-dev (>= 1:1.2.3),
+Standards-Version: 4.1.0
+Uploaders: Colin Watson <cjwatson@debian.org>,
+           Matthew Vernon <matthew@debian.org>,
+Homepage: http://www.openssh.com/
+Vcs-Git: https://salsa.debian.org/ssh-team/openssh.git
+Vcs-Browser: https://salsa.debian.org/ssh-team/openssh
+
+Package: openssh-client
+Architecture: any
+Depends: adduser (>= 3.10),
+         dpkg (>= 1.7.0),
+         passwd,
+         ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: xauth,
+Conflicts: sftp,
+Replaces: ssh,
+          ssh-krb5,
+Suggests: keychain,
+          libpam-ssh,
+          monkeysphere,
+          ssh-askpass,
+Provides: rsh-client,
+          ssh-client,
+Multi-Arch: foreign
+Description: secure shell (SSH) client, for secure access to remote machines
+ This is the portable version of OpenSSH, a free implementation of
+ the Secure Shell protocol as specified by the IETF secsh working
+ group.
+ .
+ Ssh (Secure Shell) is a program for logging into a remote machine
+ and for executing commands on a remote machine.
+ It provides secure encrypted communications between two untrusted
+ hosts over an insecure network. X11 connections and arbitrary TCP/IP
+ ports can also be forwarded over the secure channel.
+ It can be used to provide applications with a secure communication
+ channel.
+ .
+ This package provides the ssh, scp and sftp clients, the ssh-agent
+ and ssh-add programs to make public key authentication more convenient,
+ and the ssh-keygen, ssh-keyscan, ssh-copy-id and ssh-argv0 utilities.
+ .
+ In some countries it may be illegal to use any encryption at all
+ without a special permit.
+ .
+ ssh replaces the insecure rsh, rcp and rlogin programs, which are
+ obsolete for most purposes.
+
+Package: openssh-server
+Priority: optional
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends},
+Depends: adduser (>= 3.9),
+         dpkg (>= 1.9.0),
+         libpam-modules (>= 0.72-9),
+         libpam-runtime (>= 0.76-14),
+         lsb-base (>= 4.1+Debian3),
+         openssh-client (= ${binary:Version}),
+         openssh-sftp-server,
+         procps,
+         ucf (>= 0.28),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: default-logind | logind | libpam-systemd,
+            ncurses-term,
+            xauth,
+            ${openssh-server:Recommends},
+Conflicts: sftp,
+           ssh-socks,
+           ssh2,
+Replaces: openssh-client (<< 1:7.9p1-8),
+          ssh,
+          ssh-krb5,
+Suggests: molly-guard,
+          monkeysphere,
+          rssh,
+          ssh-askpass,
+          ufw,
+Provides: ssh-server,
+Multi-Arch: foreign
+Description: secure shell (SSH) server, for secure access from remote machines
+ This is the portable version of OpenSSH, a free implementation of
+ the Secure Shell protocol as specified by the IETF secsh working
+ group.
+ .
+ Ssh (Secure Shell) is a program for logging into a remote machine
+ and for executing commands on a remote machine.
+ It provides secure encrypted communications between two untrusted
+ hosts over an insecure network. X11 connections and arbitrary TCP/IP
+ ports can also be forwarded over the secure channel.
+ It can be used to provide applications with a secure communication
+ channel.
+ .
+ This package provides the sshd server.
+ .
+ In some countries it may be illegal to use any encryption at all
+ without a special permit.
+ .
+ sshd replaces the insecure rshd program, which is obsolete for most
+ purposes.
+
+Package: openssh-sftp-server
+Priority: optional
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: openssh-server | ssh-server,
+Breaks: openssh-server (<< 1:6.5p1-5),
+Replaces: openssh-server (<< 1:6.5p1-5),
+Enhances: openssh-server,
+          ssh-server,
+Description: secure shell (SSH) sftp server module, for SFTP access from remote machines
+ This is the portable version of OpenSSH, a free implementation of
+ the Secure Shell protocol as specified by the IETF secsh working
+ group.
+ .
+ Ssh (Secure Shell) is a program for logging into a remote machine
+ and for executing commands on a remote machine.
+ It provides secure encrypted communications between two untrusted
+ hosts over an insecure network. X11 connections and arbitrary TCP/IP
+ ports can also be forwarded over the secure channel.
+ It can be used to provide applications with a secure communication
+ channel.
+ .
+ This package provides the SFTP server module for the SSH server. It
+ is needed if you want to access your SSH server with SFTP. The SFTP
+ server module also works with other SSH daemons like dropbear.
+ .
+ OpenSSH's sftp and sftp-server implement revision 3 of the SSH filexfer
+ protocol described in:
+ .
+  http://www.openssh.com/txt/draft-ietf-secsh-filexfer-02.txt
+ .
+ Newer versions of the draft will not be supported, though some features
+ are individually implemented as extensions.
+
+Package: openssh-tests
+Priority: optional
+Architecture: any
+Depends: openssh-client (= ${binary:Version}),
+         openssh-server (= ${binary:Version}),
+         openssh-sftp-server (= ${binary:Version}),
+         openssl,
+         putty-tools (>= 0.67-2),
+         python-twisted-conch (>= 1:15.5.0-1),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Description: OpenSSH regression tests
+ This package provides OpenSSH's regression test suite.  It is mainly
+ intended for use with the autopkgtest system, though can also be run
+ directly using /usr/lib/openssh/regress/run-tests.
+
+Package: ssh
+Priority: optional
+Architecture: all
+Pre-Depends: dpkg (>= 1.17.5),
+Depends: openssh-client (>= ${binary:Version}),
+         openssh-server (>= ${binary:Version}),
+         ${misc:Depends},
+Description: secure shell client and server (metapackage)
+ This metapackage is a convenient way to install both the OpenSSH client
+ and the OpenSSH server. It provides nothing in and of itself, so you
+ may remove it if nothing depends on it.
+
+Package: ssh-askpass-gnome
+Build-Profiles: <!pkg.openssh.nognome>
+Section: gnome
+Priority: optional
+Architecture: any
+Depends: openssh-client | ssh (>= 1:1.2pre7-4),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Replaces: ssh (<< 1:3.5p1-3),
+Provides: ssh-askpass,
+Description: interactive X program to prompt users for a passphrase for ssh-add
+ This has been split out of the main openssh-client package so that
+ openssh-client does not need to depend on GTK+.
+ .
+ You probably want the ssh-askpass package instead, but this is
+ provided to add to your choice and/or confusion.
+
+Package: openssh-client-udeb
+Build-Profiles: <!noudeb>
+Package-Type: udeb
+Section: debian-installer
+Priority: optional
+Architecture: any
+Depends: ${shlibs:Depends},
+XB-Installer-Menu-Item: 99999
+Description: secure shell client for the Debian installer
+ This is the portable version of OpenSSH, a free implementation of
+ the Secure Shell protocol as specified by the IETF secsh working
+ group.
+ .
+ This package provides the ssh client for use in debian-installer.
+
+Package: openssh-server-udeb
+Build-Profiles: <!noudeb>
+Package-Type: udeb
+Section: debian-installer
+Priority: optional
+Architecture: any
+Depends: ${shlibs:Depends},
+Description: secure shell server for the Debian installer
+ This is the portable version of OpenSSH, a free implementation of
+ the Secure Shell protocol as specified by the IETF secsh working
+ group.
+ .
+ This package provides the sshd server for use in debian-installer.
+ Since it is expected to be used in specialized situations (e.g. S/390
+ installs with no console), it does not provide any configuration.

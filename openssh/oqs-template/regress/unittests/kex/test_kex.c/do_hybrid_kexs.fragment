@@ -1,0 +1,8 @@
+{%- for kem in config['kems'] %}
+#ifdef HAVE_{{ kem['family'] }}
+    {%- for variant in kem['variants'] %}
+	do_kex(KEX_ECDH_NISTP384_{{ variant['name'] }}_SHA384);
+    {%- endfor %}
+#endif /* HAVE_{{ kem['family'] }} */
+{%- endfor %}
+

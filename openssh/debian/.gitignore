@@ -1,0 +1,17 @@
+/*.debhelper*
+/*substvars
+/build-deb
+/build-udeb
+/files
+/keygen-test/key1
+/keygen-test/key1.pub
+/keygen-test/key2
+/keygen-test/key2.pub
+/openssh-client
+/openssh-client-udeb
+/openssh-server
+/openssh-server-udeb
+/ssh
+/ssh-askpass-gnome
+/ssh-krb5
+/tmp

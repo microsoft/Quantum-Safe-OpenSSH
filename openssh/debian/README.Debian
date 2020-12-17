@@ -1,0 +1,295 @@
+OpenSSH for Debian
+------------------
+
+UPGRADE ISSUES
+==============
+
+PermitRootLogin
+---------------
+
+As of 1:6.6p1-1, new installations will be set to "PermitRootLogin
+without-password" (or the synonymous "PermitRootLogin prohibit-password" as
+of 1:7.1p1-1).  This disables password authentication for root, foiling
+password dictionary attacks on the root user.  Some sites may wish to use
+the stronger "PermitRootLogin forced-commands-only" or "PermitRootLogin no",
+but note that "PermitRootLogin no" will break setups that SSH to root with a
+forced command to take full-system backups.  You can use PermitRootLogin in
+a Match block if you want finer-grained control here.
+
+For many years Debian's OpenSSH packaging used "PermitRootLogin yes", in
+line with upstream.  To avoid breaking local setups, this is still true for
+installations upgraded from before 1:6.6p1-1.  If you wish to change this,
+you should edit /etc/ssh/sshd_config, change it manually, and run "service
+ssh restart" as root.
+
+Disabling PermitRootLogin means that an attacker possessing credentials for
+the root account (any credentials in the case of "yes", or private key
+material in the case of "prohibit-password") must compromise a normal user
+account rather than being able to SSH directly to root.  Be careful to avoid
+a false illusion of security if you change this setting; any account you
+escalate to root from should be considered equivalent to root for the
+purposes of security against external attack.  You might for example disable
+it if you know you will only ever log in as root from the physical console.
+
+Since the root account does not generally have non-password credentials
+unless you explicitly install an SSH public key in its
+~/.ssh/authorized_keys, which you presumably only do if you want to SSH to
+it, "prohibit-password" should be a reasonable default for most sites.
+
+As of OpenSSH 7.0, this is the upstream default.
+
+For further discussion, see:
+
+  https://bugs.debian.org/298138
+  https://bugzilla.mindrot.org/show_bug.cgi?id=2164
+
+X11 Forwarding
+--------------
+
+ssh's default for ForwardX11 has been changed to ``no'' because it has
+been pointed out that logging into remote systems administered by
+untrusted people is likely to open you up to X11 attacks, so you
+should have to actively decide that you trust the remote machine's
+root, before enabling X11.  I strongly recommend that you do this on a
+machine-by-machine basis, rather than just enabling it in the default
+host settings.
+
+In order for X11 forwarding to work, you need to install xauth on the
+server. In Debian this is in the xbase-clients package.
+
+As of OpenSSH 3.1, the remote $DISPLAY uses localhost by default to reduce
+the security risks of X11 forwarding. Look up X11UseLocalhost in
+sshd_config(8) if this is a problem.
+
+OpenSSH 3.8 invented ForwardX11Trusted, which when set to no causes the
+ssh client to create an untrusted X cookie so that attacks on the
+forwarded X11 connection can't become attacks on X clients on the remote
+machine. However, this has some problems in implementation - notably a
+very short timeout of the untrusted cookie - breaks large numbers of
+existing setups, and generally seems immature. The Debian package
+therefore sets the default for this option to "yes" (in ssh itself,
+rather than in ssh_config).
+
+Fallback to RSH
+---------------
+
+The default for this setting has been changed from Yes to No, for
+security reasons, and to stop the delay attempting to rsh to machines
+that don't offer the service.  Simply switch it back on in either
+/etc/ssh/ssh_config or ~/.ssh/config for those machines that you need
+it for.
+
+Setgid ssh-agent and environment variables
+------------------------------------------
+
+As of version 1:3.5p1-1, ssh-agent is installed setgid to prevent ptrace()
+attacks retrieving private key material. This has the side-effect of causing
+glibc to remove certain environment variables which might have security
+implications for set-id programs, including LD_PRELOAD, LD_LIBRARY_PATH, and
+TMPDIR.
+
+If you need to set any of these environment variables, you will need to do
+so in the program exec()ed by ssh-agent. This may involve creating a small
+wrapper script.
+
+Symlink Hostname invocation
+---------------------------
+
+This version of ssh no longer includes support for invoking ssh with the
+hostname as the name of the file run.  People wanting this support should
+use the ssh-argv0 script.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+OTHER ISSUES
+============
+
+Authorization Forwarding
+------------------------
+
+Similarly, root on a remote server could make use of your ssh-agent
+(while you're logged into their machine) to obtain access to machines
+which trust your keys.  This feature is therefore disabled by default.
+You should only re-enable it for those hosts (in your ~/.ssh/config or
+/etc/ssh/ssh_config) where you are confident that the remote machine
+is not a threat.
+
+Problems logging in with RSA authentication
+-------------------------------------------
+
+If you have trouble logging in with RSA authentication then the
+problem is probably caused by the fact that you have your home
+directory writable by group, as well as user (this is the default on
+Debian systems).
+
+Depending upon other settings on your system (i.e. other users being
+in your group) this could open a security hole, so you will need to
+make your home directory writable only by yourself.  Run this command,
+as yourself:
+
+  chmod g-w ~/
+
+to remove group write permissions.  If you use ssh-copy-id to install your
+keys, it does this for you.
+
+-L option of ssh nonfree
+------------------------
+
+non-free ssh supported the usage of the option -L to use a non privileged
+port for scp. This option will not be supported by scp from openssh.
+
+Please use instead scp -o "UsePrivilegedPort=no" as documented in the
+manpage to scp itself.
+
+Problem logging in because of TCP-Wrappers
+------------------------------------------
+
+ssh is compiled with support for tcp-wrappers. So if you can no longer
+log into your system, please check that /etc/hosts.allow and /etc/hosts.deny
+are configured so that ssh is not blocked.
+
+Kerberos support
+----------------
+
+ssh is now compiled with Kerberos support. Unfortunately, privilege
+separation is incompatible with parts of Kerberos support for protocol 2;
+you may need to run kinit after logging in.
+
+Interoperability between scp and the ssh.com SSH server
+-------------------------------------------------------
+
+In version 2 and greater of the commercial SSH server produced by SSH
+Communications Security, scp was changed to use SFTP (SSH2's file transfer
+protocol) instead of the traditional rcp-over-ssh, thereby breaking
+compatibility. The OpenSSH developers regard this as a bug in the ssh.com
+server, and do not currently intend to change OpenSSH's scp to match.
+
+Workarounds for this problem are to install scp1 on the server (scp2 will
+fall back to it), to use sftp, or to use some other transfer mechanism such
+as rsync-over-ssh or tar-over-ssh.
+
+Running sshd from inittab
+-------------------------
+
+Some people find it useful to run the sshd server from inittab, to make sure
+that it always stays running. To do this, stop sshd ('service ssh stop'),
+add the following line to /etc/inittab, and run 'telinit q':
+
+  ss:2345:respawn:/usr/sbin/sshd -D
+
+If you do this, note that you will need to stop sshd being started in the
+normal way ('update-rc.d ssh disable') and that you will need to restart
+this sshd manually on upgrades.
+
+Per-connection sshd instances with systemd
+------------------------------------------
+
+If you want to reconfigure systemd to listen on port 22 itself and launch an
+instance of sshd for each connection (inetd-style socket activation), then
+you can run:
+
+  systemctl stop ssh.service
+  systemctl start ssh.socket
+
+To make this permanent:
+
+  systemctl disable ssh.service
+  systemctl enable ssh.socket
+
+This may be appropriate in environments where minimal footprint is critical
+(e.g. cloud guests).  Be aware that this bypasses MaxStartups, and systemd's
+MaxConnections cannot quite replace this as it cannot distinguish between
+authenticated and unauthenticated connections; see
+https://bugzilla.redhat.com/show_bug.cgi?id=963268 for more discussion.
+
+The provided ssh.socket unit file sets ListenStream=22.  If you need to have
+it listen on a different address or port, then you will need to do this as
+follows (modifying ListenStream to match your requirements):
+
+  mkdir -p /etc/systemd/system/ssh.socket.d
+  cat >/etc/systemd/system/ssh.socket.d/listen.conf <<EOF
+  [Socket]
+  ListenStream=2222
+  EOF
+  systemctl daemon-reload
+
+See systemd.socket(5) for details.
+
+Terminating SSH sessions cleanly on shutdown/reboot with systemd
+----------------------------------------------------------------
+
+If you have libpam-systemd >= 230 installed (following openssh-server's
+Recommends) and "UsePAM yes" in sshd_config (the default configuration
+shipped by this package), then SSH sessions will be terminated cleanly when
+the server is shut down or rebooted.
+
+If either of these conditions does not hold, then you may find that SSH
+sessions hang silently when the server is shut down or rebooted.  If you do
+not want to use PAM or configure it properly for whatever reason, then you
+can instead copy
+/usr/share/doc/openssh-server/examples/ssh-session-cleanup.service to
+/etc/systemd/system/ and run "systemctl enable ssh-session-cleanup.service".
+
+Non-systemd users may find /usr/lib/openssh/ssh-session-cleanup helpful if
+they have a similar problem, although at present there is no system
+integration for this for anything other than systemd.
+
+SSH protocol 1 server support removed
+-------------------------------------
+
+sshd(8) no longer supports the old SSH protocol 1, so all the configuration
+options related to it are now deprecated and should be removed from
+/etc/ssh/sshd_config.  These are:
+
+  KeyRegenerationInterval
+  RSAAuthentication
+  RhostsRSAAuthentication
+  ServerKeyBits
+
+The Protocol option is also no longer needed, although it is silently
+ignored rather than deprecated.
+
+if-up hook removed
+------------------
+
+openssh-server previously shipped an if-up hook that restarted sshd when a
+network interface came up.  This generally caused more problems than it
+solved: for instance, it means that sshd stops listening briefly while being
+restarted, which can cause problems in some environments, particularly
+automated tests.
+
+The only known situation where the if-up hook was useful was when
+sshd_config was changed to add ListenAddress entries for particular IP
+addresses, overriding the default of listening on all addresses, and the
+system is one that often roams between networks.  In such a situation, it is
+better to remove ListenAddress entries from sshd_config (restoring it to the
+default behaviour) and instead use firewall rules to restrict incoming SSH
+connections to only the desired interfaces or addresses.
+
+For further discussion, see:
+
+  https://bugs.launchpad.net/bugs/1674330
+
+IPQoS defaults reverted to pre-7.8 values
+-----------------------------------------
+
+OpenSSH 7.8 changed the default IPQoS settings to use DSCP AF21 for
+interactive traffic and CS1 for bulk.  This caused some problems with other
+software ("iptables -m tos" and VMware), so Debian's OpenSSH reverts this
+change for the time being.
+
+This is *temporary*, and we expect to come back into sync with upstream
+OpenSSH once those other issues have been fixed.  If you want to restore the
+upstream default, add this to ssh_config and sshd_config:
+
+  IPQoS af21 cs1
+
+For further discussion, see:
+
+  https://bugs.debian.org/923879
+  https://bugs.debian.org/926229
+  https://bugs.launchpad.net/1822370
+
+-- 
+Matthew Vernon <matthew@debian.org>
+Colin Watson <cjwatson@debian.org>

@@ -1,0 +1,93 @@
+From 6b56cd57db9061296231f14d537f1ebaf25e8877 Mon Sep 17 00:00:00 2001
+From: Colin Watson <cjwatson@debian.org>
+Date: Mon, 8 Apr 2019 10:46:29 +0100
+Subject: Revert "upstream: Update default IPQoS in ssh(1), sshd(8) to DSCP
+ AF21 for"
+
+This reverts commit 5ee8448ad7c306f05a9f56769f95336a8269f379.
+
+The IPQoS default changes have some unfortunate interactions with
+iptables (see https://bugs.debian.org/923880) and VMware, so I'm
+temporarily reverting them until those have been fixed.
+
+Bug-Debian: https://bugs.debian.org/923879
+Bug-Debian: https://bugs.debian.org/926229
+Bug-Ubuntu: https://bugs.launchpad.net/1822370
+Last-Update: 2019-04-08
+
+Patch-Name: revert-ipqos-defaults.patch
+---
+ readconf.c    | 4 ++--
+ servconf.c    | 4 ++--
+ ssh_config.5  | 6 ++----
+ sshd_config.5 | 6 ++----
+ 4 files changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/readconf.c b/readconf.c
+index 661b8bf40..6d046f063 100644
+--- a/readconf.c
++++ b/readconf.c
+@@ -2133,9 +2133,9 @@ fill_default_options(Options * options)
+ 	if (options->visual_host_key == -1)
+ 		options->visual_host_key = 0;
+ 	if (options->ip_qos_interactive == -1)
+-		options->ip_qos_interactive = IPTOS_DSCP_AF21;
++		options->ip_qos_interactive = IPTOS_LOWDELAY;
+ 	if (options->ip_qos_bulk == -1)
+-		options->ip_qos_bulk = IPTOS_DSCP_CS1;
++		options->ip_qos_bulk = IPTOS_THROUGHPUT;
+ 	if (options->request_tty == -1)
+ 		options->request_tty = REQUEST_TTY_AUTO;
+ 	if (options->proxy_use_fdpass == -1)
+diff --git a/servconf.c b/servconf.c
+index c5dd617ef..bf2669147 100644
+--- a/servconf.c
++++ b/servconf.c
+@@ -403,9 +403,9 @@ fill_default_server_options(ServerOptions *options)
+ 	if (options->permit_tun == -1)
+ 		options->permit_tun = SSH_TUNMODE_NO;
+ 	if (options->ip_qos_interactive == -1)
+-		options->ip_qos_interactive = IPTOS_DSCP_AF21;
++		options->ip_qos_interactive = IPTOS_LOWDELAY;
+ 	if (options->ip_qos_bulk == -1)
+-		options->ip_qos_bulk = IPTOS_DSCP_CS1;
++		options->ip_qos_bulk = IPTOS_THROUGHPUT;
+ 	if (options->version_addendum == NULL)
+ 		options->version_addendum = xstrdup("");
+ 	if (options->fwd_opts.streamlocal_bind_mask == (mode_t)-1)
+diff --git a/ssh_config.5 b/ssh_config.5
+index 1a8e24bd1..f6c1b3b33 100644
+--- a/ssh_config.5
++++ b/ssh_config.5
+@@ -1055,11 +1055,9 @@ If one argument is specified, it is used as the packet class unconditionally.
+ If two values are specified, the first is automatically selected for
+ interactive sessions and the second for non-interactive sessions.
+ The default is
+-.Cm af21
+-(Low-Latency Data)
++.Cm lowdelay
+ for interactive sessions and
+-.Cm cs1
+-(Lower Effort)
++.Cm throughput
+ for non-interactive sessions.
+ .It Cm KbdInteractiveAuthentication
+ Specifies whether to use keyboard-interactive authentication.
+diff --git a/sshd_config.5 b/sshd_config.5
+index ba50a30f1..03f813e72 100644
+--- a/sshd_config.5
++++ b/sshd_config.5
+@@ -866,11 +866,9 @@ If one argument is specified, it is used as the packet class unconditionally.
+ If two values are specified, the first is automatically selected for
+ interactive sessions and the second for non-interactive sessions.
+ The default is
+-.Cm af21
+-(Low-Latency Data)
++.Cm lowdelay
+ for interactive sessions and
+-.Cm cs1
+-(Lower Effort)
++.Cm throughput
+ for non-interactive sessions.
+ .It Cm KbdInteractiveAuthentication
+ Specifies whether to allow keyboard-interactive authentication.

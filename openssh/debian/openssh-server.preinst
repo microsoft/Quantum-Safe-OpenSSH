@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+action=$1
+version=$2
+
+if [ "$action" = upgrade ] || [ "$action" = install ]
+then
+  if dpkg --compare-versions "$version" lt 1:5.5p1-6 && \
+     [ -d /run/sshd ]; then
+    # make sure /run/sshd is not removed on upgrades
+    touch /run/sshd/.placeholder
+  fi
+fi
+
+#DEBHELPER#
+
+exit 0

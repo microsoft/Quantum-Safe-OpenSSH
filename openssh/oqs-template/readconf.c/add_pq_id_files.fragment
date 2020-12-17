@@ -1,0 +1,6 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_{{ variant['name'] }}, 0);
+    {%- endfor %}
+{%- endfor %}
+

@@ -1,0 +1,16 @@
+{%- set count = namespace(val=10) %}
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+			L_PUBKEY(_PATH_HOST_{{ variant['name'] }}_KEY_FILE, {{ count.val }});
+        {%- set count.val = count.val + 1 -%}
+    {%- endfor -%}
+{%- endfor %}
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+        {%- for classical_alg in variant['mix_with'] %}
+			L_PUBKEY(_PATH_HOST_{{ classical_alg.name|upper }}_{{ variant['name'] }}_KEY_FILE, {{ count.val }});
+            {%- set count.val = count.val + 1 -%}
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+

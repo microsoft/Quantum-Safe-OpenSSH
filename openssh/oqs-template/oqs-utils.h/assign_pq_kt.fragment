@@ -1,0 +1,9 @@
+
+#define IS_OQS_KEY_TYPE(type) ( \
+{%- for sig in config['sigs'] -%}
+    {% for variant in sig['variants'] %}
+				(type) == KEY_{{ variant['name'] }} || \
+    {%- endfor -%}
+{% endfor %}
+				IS_HYBRID(type))
+

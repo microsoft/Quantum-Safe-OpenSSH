@@ -1,0 +1,38 @@
+From 35956d8211ef0a606a117ca3f0ba3ae163c31a39 Mon Sep 17 00:00:00 2001
+From: Lonnie Abelbeck <lonnie@abelbeck.com>
+Date: Tue, 1 Oct 2019 09:05:09 -0500
+Subject: Deny (non-fatal) shmget/shmat/shmdt in preauth privsep child.
+
+New wait_random_seeded() function on OpenSSL 1.1.1d uses shmget, shmat, and shmdt
+in the preauth codepath, deny (non-fatal) in seccomp_filter sandbox.
+
+Bug: https://github.com/openssh/openssh-portable/pull/149
+Bug-Debian: https://bugs.debian.org/941663
+Origin: upstream, https://anongit.mindrot.org/openssh.git/commit/?id=3ef92a657444f172b61f92d5da66d94fa8265602
+Last-Update: 2019-10-05
+
+Patch-Name: seccomp-handle-shm.patch
+---
+ sandbox-seccomp-filter.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/sandbox-seccomp-filter.c b/sandbox-seccomp-filter.c
+index ef4de8c65..e8f31555e 100644
+--- a/sandbox-seccomp-filter.c
++++ b/sandbox-seccomp-filter.c
+@@ -149,6 +149,15 @@ static const struct sock_filter preauth_insns[] = {
+ #ifdef __NR_stat64
+ 	SC_DENY(__NR_stat64, EACCES),
+ #endif
++#ifdef __NR_shmget
++	SC_DENY(__NR_shmget, EACCES),
++#endif
++#ifdef __NR_shmat
++	SC_DENY(__NR_shmat, EACCES),
++#endif
++#ifdef __NR_shmdt
++	SC_DENY(__NR_shmdt, EACCES),
++#endif
+ 
+ 	/* Syscalls to permit */
+ #ifdef __NR_brk

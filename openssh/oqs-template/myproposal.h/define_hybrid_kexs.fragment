@@ -1,0 +1,11 @@
+{%- for kem in config['kems'] %}
+#ifdef HAVE_{{ kem['family'] }}
+#define KEX_HYBRID_METHOD_{{ kem['family'] }} \
+    {%- for variant in kem['variants'] %}
+    HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-{{ variant['name']|lower|replace('_','-') }}-sha384"){% if not loop.last -%}{{ " " }}\{%- endif -%}
+    {%- endfor %}
+#else
+#define KEX_HYBRID_METHOD_{{ kem['family'] }} ""
+#endif /* HAVE_{{ kem['family'] }} */
+{%- endfor %}
+

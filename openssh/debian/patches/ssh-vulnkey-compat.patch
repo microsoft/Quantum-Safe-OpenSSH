@@ -1,0 +1,42 @@
+From eccbd3637a2b8544fdcfdd5d1a00a9dfdac62aeb Mon Sep 17 00:00:00 2001
+From: Colin Watson <cjwatson@ubuntu.com>
+Date: Sun, 9 Feb 2014 16:09:50 +0000
+Subject: Accept obsolete ssh-vulnkey configuration options
+
+These options were used as part of Debian's response to CVE-2008-0166.
+Nearly six years later, we no longer need to continue carrying the bulk
+of that patch, but we do need to avoid failing when the associated
+configuration options are still present.
+
+Last-Update: 2014-02-09
+
+Patch-Name: ssh-vulnkey-compat.patch
+---
+ readconf.c | 1 +
+ servconf.c | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/readconf.c b/readconf.c
+index 36bc5e59a..5e655e924 100644
+--- a/readconf.c
++++ b/readconf.c
+@@ -190,6 +190,7 @@ static struct {
+ 	{ "fallbacktorsh", oDeprecated },
+ 	{ "globalknownhostsfile2", oDeprecated },
+ 	{ "rhostsauthentication", oDeprecated },
++	{ "useblacklistedkeys", oDeprecated },
+ 	{ "userknownhostsfile2", oDeprecated },
+ 	{ "useroaming", oDeprecated },
+ 	{ "usersh", oDeprecated },
+diff --git a/servconf.c b/servconf.c
+index 4668b8a45..6caf1db38 100644
+--- a/servconf.c
++++ b/servconf.c
+@@ -600,6 +600,7 @@ static struct {
+ 	{ "x11uselocalhost", sX11UseLocalhost, SSHCFG_ALL },
+ 	{ "xauthlocation", sXAuthLocation, SSHCFG_GLOBAL },
+ 	{ "strictmodes", sStrictModes, SSHCFG_GLOBAL },
++	{ "permitblacklistedkeys", sDeprecated, SSHCFG_GLOBAL },
+ 	{ "permitemptypasswords", sEmptyPasswd, SSHCFG_ALL },
+ 	{ "permituserenvironment", sPermitUserEnvironment, SSHCFG_GLOBAL },
+ 	{ "uselogin", sDeprecated, SSHCFG_GLOBAL },

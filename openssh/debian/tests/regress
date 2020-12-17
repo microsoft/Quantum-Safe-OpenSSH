@@ -1,0 +1,66 @@
+#! /bin/sh
+set -e
+
+if [ "$(id -un)" != openssh-tests ]; then
+	TMP="$ADTTMP/user"
+	CREATED_RUN_SSHD=false
+	STARTED_HAVEGED=false
+
+	cleanup () {
+		if $STARTED_HAVEGED; then
+			if [ -d /run/systemd/system ] && \
+			   which systemctl >/dev/null 2>&1; then
+				systemctl disable haveged || true
+				systemctl stop haveged || true
+			else
+				start-stop-daemon --stop --quiet \
+					--retry=TERM/30/KILL/5 \
+					--pidfile "$ADTTMP/haveged.pid" \
+					--name haveged
+			fi
+		fi
+		rm -f /etc/sudoers.d/openssh-tests
+		if id openssh-tests >/dev/null 2>&1; then
+			deluser --remove-home openssh-tests
+		fi
+
+		if $CREATED_RUN_SSHD; then
+			rm -rf /run/sshd
+		fi
+	}
+	trap cleanup EXIT
+
+	adduser --disabled-password --gecos 'OpenSSH tests' openssh-tests
+	cat >/etc/sudoers.d/openssh-tests <<EOF
+openssh-tests ALL = (ALL:ALL) NOPASSWD: ALL
+EOF
+	chmod 440 /etc/sudoers.d/openssh-tests
+	mkdir -p "$TMP"
+	chown -R openssh-tests:openssh-tests "$TMP"
+
+	# Depending on how the environment is configured, our test
+	# dependency on openssh-server may not actually started sshd and
+	# thus may not have caused /run/sshd to be created.
+	if [ ! -d /run/sshd ]; then
+		mkdir -m755 /run/sshd
+		CREATED_RUN_SSHD=:
+	fi
+
+	# If we're running in a container, haveged may not have started
+	# automatically.
+	if [ -d /run/systemd/system ] && which systemctl >/dev/null 2>&1; then
+		systemctl enable haveged || true
+		systemctl start haveged || true
+		STARTED_HAVEGED=:
+	elif ! pidof haveged >/dev/null; then
+		start-stop-daemon --start --quiet \
+			--pidfile "$ADTTMP/haveged.pid" \
+			--exec /usr/sbin/haveged -- -p "$ADTTMP/haveged.pid"
+		STARTED_HAVEGED=:
+	fi
+
+	sudo -u openssh-tests env TMP="$TMP" "$0" "$@"
+	exit "$?"
+fi
+
+annotate-output +%H:%M:%S.%N /usr/lib/openssh/regress/run-tests "$TMP"

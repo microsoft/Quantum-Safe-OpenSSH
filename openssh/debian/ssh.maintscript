@@ -1,0 +1,1 @@
+symlink_to_dir /usr/share/doc/ssh /usr/share/doc/openssh-client 1:6.6p1-8~

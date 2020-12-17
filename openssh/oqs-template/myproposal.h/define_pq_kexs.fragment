@@ -1,0 +1,12 @@
+{%- for kem in config['kems'] %}
+#ifdef HAVE_{{ kem['family'] }}
+#define KEX_PQ_METHOD_{{ kem['family'] }} \
+    {%- for variant in kem['variants'] %}
+    PQ_OQS_KEX_METHOD("{{ variant['name']|lower|replace('_','-') }}-sha384"){% if not loop.last -%}{{ " " }}\{%- endif -%}
+
+    {%- endfor %}
+#else
+#define KEX_PQ_METHOD_{{ kem['family'] }} ""
+#endif /* HAVE_{{ kem['family'] }} */
+{%- endfor %}
+

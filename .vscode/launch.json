@@ -1,0 +1,465 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        //
+        // SSH Server Launch configuration
+        //
+        {
+            // Start a new instance of openssh-server (sshd) on port 2222 and attach the gdb debugger
+            "name": "Server (sshd): Launch Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            //"program": "${workspaceFolder}/openssh/debian/openssh-server/usr/sbin/sshd",
+            "program": "${workspaceFolder}/bin/server/sshd",
+            "logging": {
+                "engineLogging": false  // set to true for additional logging output
+            },
+            "showDisplayString": true,
+            "stopAtEntry": false,       // set to 'true' to break at server's main function
+            "cwd": "${workspaceFolder}/openssh",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            // This script calls gdb with sudo. The server needs to run as root.
+            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb.sh",
+            "envFile": "${workspaceFolder}/.vscode/.env",
+            "args": [
+                "-p2222",           // The port that openssh-server (sshd) will listen on                
+                "-d",               // This will run sshd in debug mode and do limited forking
+                "-f./sshd_config",  // Comment this out to use the installed sshd sshd_config
+
+                // -------------------------------------------------------------------------------
+                // Algorithm selection options:
+                //
+                // There are three optional algorithm parameters for the SSH client and server:
+                //
+                //   -oKexAlgorithms 
+                //        specify the allowed key-exchange/key-encapsulation algorithm(s)
+                //
+                //   -oHostKeyAlgorithms
+                //        specify allowed server host-key algorithm(s)
+                //
+                //   -oPubkeyAcceptedKeyTypes 
+                //        specify allowed client public-key algorithm(s)
+                //
+                // You may set these here. There are two ways to set the algorithms: hard-coded value or 
+                // input-selector:
+                //
+                // Example: allow specific algorithm(s) by name
+                // "-oKexAlgorithms=frodo-640-aes-sha384@openquantumsafe.org",
+                // "-oHostKeyAlgorithms=ssh-p384-picnic2l3fs,ssh-rsa3072-qteslapi",
+                // "-oPubkeyAcceptedKeyTypes=ssh-picnic2l3fs",
+                //
+                // Example: set the allowed algorithm(s) using the input-selector prompt at launch time:
+                // "-oKexAlgorithms=${input:kexAlgorithm}@openquantumsafe.org",
+                // "-oHostKeyAlgorithms=${input:hostKeyAlgorithm}",
+                // "-oPubkeyAcceptedKeyTypes=${input:publicKeyAlgorithm}",
+                //
+                // -------------------------------------------------------------------------------
+
+                //"-oKexAlgorithms=<algorithm(s)>",
+
+                //"-oHostKeyAlgorithms=<algorithm(s)>",
+
+                //"-oPubkeyAcceptedKeyTypes=<algorithm(s)>",
+
+            ],
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    // Required to set future breakpoints
+                    "description": "breakpoint pending",
+                    "text": "-interpreter-exec console \"set breakpoint pending on\"",
+                    "ignoreFailures": true
+                },
+                {
+                    
+                    "description": "Follow child fork",
+                    
+                    // set follow-fork-mode to child or parent. comment out one or the other lines below.
+                    "text": "-interpreter-exec console \"set follow-fork-mode child\"",
+                    //"text": "-interpreter-exec console \"set follow-fork-mode parent\"", 
+
+                    "ignoreFailures": true
+                },
+
+                // Useful preset breakpoints for SSH server
+                // Un-comment one or more of the command sections below to add that gdb breakpoint to the SSH server.
+                //
+                // Note: Because of the way SSH sever forks, some of the breakpoints require follow-fork-mode=child and 
+                //       some follow-fork-mode=parent. The follow-fork-mode setting is in the command section above.
+                //
+                // Note: vs-code, when hitting a gdb breakpoint, will display that an error has occurred
+                //       This can be disregarded.
+
+                // {   // Requires follow-fork-mode = child
+                //     "description": "Break on Key Encapsulation (KEM)",
+                //     "text": "-interpreter-exec console \"break OQS_KEM_encaps\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {   // Requires follow-fork-mode = parent
+                //     "description": "Break on PQ Authorization Signature Verification",
+                //     "text": "-interpreter-exec console \"break OQS_SIG_verify\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {   // Requires follow-fork-mode = child
+                //     "description": "Break on server PQ KEX Selection",
+                //     "text": "-interpreter-exec console \"break choose_kex\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {   // Requires follow-fork-mode = child
+                //     "description": "Break on server PQ HostKey Selection",
+                //     "text": "-interpreter-exec console \"break choose_hostkeyalg\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {
+                //     "description": "Break on server loading default options",
+                //     "text": "-interpreter-exec console \"break fill_default_server_options\"",
+                //     "ignoreFailures": true
+                // },
+            ],
+
+        },
+
+
+        //
+        // SSH Client Launch configuration
+        //
+        {
+            // Start a new instance of openssh-client (ssh) on port 2222 and attach the gdb debugger
+            "name": "Client (ssh): Launch Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            //"program": "${workspaceFolder}/openssh/debian/openssh-client/usr/bin/ssh",
+            "program": "${workspaceFolder}/bin/client/ssh",
+            "envFile": "${workspaceFolder}/.vscode/.env",
+            "showDisplayString": true,
+            "args": [
+                "localhost",
+                "-p2222",     // The port that openssh-client (ssh) will connect to.        
+                "-v",         // Debug output. Add additional 'v's for even more verbose output (max = -vvvv)
+ 
+                // Normally the first time you connect to the server, you would see a prompt like this:
+                //      The authenticity of host '[localhost]:2222 ([127.0.0.1]:2222)' can't be established.
+                //      P521_PICNICL5FS key fingerprint is SHA256:eM52/8qY4dF10C96U5115j2rP6Ar63C9Okpuyadg4iI.
+                //      Are you sure you want to continue connecting (yes/no)? 
+                //
+                // VS Code terminal cannot present that prompt when using 'launch' to start SSH
+                //
+                // You see this error instead:
+                //      debug3: hostkeys_foreach: reading file "/home/$USER/.ssh/known_hosts"
+                //      debug1: read_passphrase: can't open /dev/tty: No such device or address
+                //      Host key verification failed.
+                //
+                // As a workaround, we turn off 'StrictHostKeyChecking' and accept the host by default.                                   
+                "-oStrictHostKeyChecking=no",
+
+                // -------------------------------------------------------------------------------
+                // Algorithm selection options:
+                //
+                // There are three optional algorithm parameters for the SSH client and server:
+                //
+                //   -oKexAlgorithms 
+                //        specify the allowed key-exchange/key-encapsulation algorithm(s)
+                //
+                //   -oHostKeyAlgorithms
+                //        specify allowed server host-key algorithm(s)
+                //
+                //   -oPubkeyAcceptedKeyTypes 
+                //        specify allowed client public-key algorithm(s)
+                //
+                // You may set these here. There are two ways to set the algorithms: hard-coded value or 
+                // input-selector:
+                //
+                // Example: allow specific algorithm(s) by name
+                // "-oKexAlgorithms=frodo-640-aes-sha384@openquantumsafe.org",
+                // "-oHostKeyAlgorithms=ssh-p384-picnic2l3fs,ssh-rsa3072-qteslapi",
+                // "-oPubkeyAcceptedKeyTypes=ssh-picnic2l3fs",
+                //
+                // Example: set the allowed algorithm(s) using the input-selector prompt at launch time:
+                // "-oKexAlgorithms=${input:kexAlgorithm}@openquantumsafe.org",
+                // "-oHostKeyAlgorithms=${input:hostKeyAlgorithm}",
+                // "-oPubkeyAcceptedKeyTypes=${input:publicKeyAlgorithm}",
+                //
+                // -------------------------------------------------------------------------------
+
+                //"-oKexAlgorithms=<algorithm(s)>",
+
+                //"-oHostKeyAlgorithms=<algorithm(s)>",
+
+                //"-oPubkeyAcceptedKeyTypes=<algorithm(s)>",
+
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/openssh",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    // Required to set future breakpoints
+                    "description": "breakpoint pending",
+                    "text": "-interpreter-exec console \"set breakpoint pending on\"",
+                    "ignoreFailures": true
+                },
+
+                // Useful preset breakpoints for SSH client
+                // Un-comment one or more of the command sections below to add that gdb breakpoint to the SSH client.
+                // Note: vs-code, when hitting a gdb breakpoint, will display that an error has occurred
+                //       This can be disregarded.
+
+                // {
+                //     "description": "Break on key de-capsulation",
+                //     "text": "-interpreter-exec console \"break OQS_KEM_decaps\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {
+                //     "description": "Break on Authorization Signature Verification",
+                //     "text": "-interpreter-exec console \"break OQS_SIG_sign\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {
+                //     "description": "Break on client KEX selection",
+                //     "text": "-interpreter-exec console \"break choose_kex\"",
+                //     "ignoreFailures": true
+                // },
+
+                // {
+                //     "description": "Break on client HostKey selection",
+                //     "text": "-interpreter-exec console \"break choose_hostkeyalg\"",
+                //     "ignoreFailures": true
+                // },
+
+            ],
+        },
+
+    ],
+    "inputs": [
+        {
+            "type": "pickString",
+            "id": "kexAlgorithm",
+            "description": "Select Key-Exchange (KEX)",
+            "options": [
+                "ecdh-nistp384-sike-p434-sha384",
+                "ecdh-nistp384-sike-p503-sha384",
+                "ecdh-nistp384-sike-p610-sha384",
+                "ecdh-nistp384-sike-p751-sha384",
+                "ecdh-nistp384-sike-p434-compressed-sha384",
+                "ecdh-nistp384-sike-p503-compressed-sha384",
+                "ecdh-nistp384-sike-p610-compressed-sha384",
+                "ecdh-nistp384-sike-p751-compressed-sha384",
+                "ecdh-nistp384-frodo-640-aes-sha384",
+                "ecdh-nistp384-frodo-640-shake-sha384",
+                "ecdh-nistp384-frodo-976-aes-sha384",
+                "ecdh-nistp384-frodo-976-shake-sha384",
+                "ecdh-nistp384-frodo-1344-aes-sha384",
+                "ecdh-nistp384-frodo-1344-shake-sha384",
+                "ecdh-nistp384-bike1-l1-cpa-sha384",
+                "ecdh-nistp384-bike1-l3-cpa-sha384",
+                "ecdh-nistp384-bike1-l1-fo-sha384",
+                "ecdh-nistp384-bike1-l3-fo-sha384",
+                "ecdh-nistp384-classic-mceliece-348864-sha384",
+                "ecdh-nistp384-classic-mceliece-348864f-sha384",
+                "ecdh-nistp384-classic-mceliece-460896-sha384",
+                "ecdh-nistp384-classic-mceliece-460896f-sha384",
+                "ecdh-nistp384-classic-mceliece-6688128-sha384",
+                "ecdh-nistp384-classic-mceliece-6688128f-sha384",
+                "ecdh-nistp384-classic-mceliece-6960119-sha384",
+                "ecdh-nistp384-classic-mceliece-6960119f-sha384",
+                "ecdh-nistp384-classic-mceliece-8192128-sha384",
+                "ecdh-nistp384-classic-mceliece-8192128f-sha384",
+                "ecdh-nistp384-kyber-512-sha384",
+                "ecdh-nistp384-kyber-768-sha384",
+                "ecdh-nistp384-kyber-1024-sha384",
+                "ecdh-nistp384-kyber-512-90s-sha384",
+                "ecdh-nistp384-kyber-768-90s-sha384",
+                "ecdh-nistp384-kyber-1024-90s-sha384",
+                "ecdh-nistp384-ntru-hps-2048-509-sha384",
+                "ecdh-nistp384-ntru-hps-2048-677-sha384",
+                "ecdh-nistp384-ntru-hrss-701-sha384",
+                "ecdh-nistp384-ntru-hps-4096-821-sha384",
+                "ecdh-nistp384-saber-lightsaber-sha384",
+                "ecdh-nistp384-saber-saber-sha384",
+                "ecdh-nistp384-saber-firesaber-sha384",
+                "ecdh-nistp384-sidh-p434-sha384",
+                "ecdh-nistp384-sidh-p503-sha384",
+                "ecdh-nistp384-sidh-p610-sha384",
+                "ecdh-nistp384-sidh-p751-sha384",
+                "ecdh-nistp384-sidh-p434-compressed-sha384",
+                "ecdh-nistp384-sidh-p503-compressed-sha384",
+                "ecdh-nistp384-sidh-p610-compressed-sha384",
+                "ecdh-nistp384-sidh-p751-compressed-sha384",
+                "ecdh-nistp384-hqc-128-1-cca2-sha384",
+                "ecdh-nistp384-hqc-192-1-cca2-sha384",
+                "ecdh-nistp384-hqc-192-2-cca2-sha384",
+                "ecdh-nistp384-hqc-256-1-cca2-sha384",
+                "ecdh-nistp384-hqc-256-2-cca2-sha384",
+                "ecdh-nistp384-hqc-256-3-cca2-sha384",
+                "sike-p434-sha384",
+                "sike-p503-sha384",
+                "sike-p610-sha384",
+                "sike-p751-sha384",
+                "sike-p434-compressed-sha384",
+                "sike-p503-compressed-sha384",
+                "sike-p610-compressed-sha384",
+                "sike-p751-compressed-sha384",
+                "frodo-640-aes-sha384",
+                "frodo-640-shake-sha384",
+                "frodo-976-aes-sha384",
+                "frodo-976-shake-sha384",
+                "frodo-1344-aes-sha384",
+                "frodo-1344-shake-sha384",
+                "bike1-l1-cpa-sha384",
+                "bike1-l3-cpa-sha384",
+                "bike1-l1-fo-sha384",
+                "bike1-l3-fo-sha384",
+                "classic-mceliece-348864-sha384",
+                "classic-mceliece-348864f-sha384",
+                "classic-mceliece-460896-sha384",
+                "classic-mceliece-460896f-sha384",
+                "classic-mceliece-6688128-sha384",
+                "classic-mceliece-6688128f-sha384",
+                "classic-mceliece-6960119-sha384",
+                "classic-mceliece-6960119f-sha384",
+                "classic-mceliece-8192128-sha384",
+                "classic-mceliece-8192128f-sha384",
+                "kyber-512-sha384",
+                "kyber-768-sha384",
+                "kyber-1024-sha384",
+                "kyber-512-90s-sha384",
+                "kyber-768-90s-sha384",
+                "kyber-1024-90s-sha384",
+                "ntru-hps-2048-509-sha384",
+                "ntru-hps-2048-677-sha384",
+                "ntru-hrss-701-sha384",
+                "ntru-hps-4096-821-sha384",
+                "saber-lightsaber-sha384",
+                "saber-saber-sha384",
+                "saber-firesaber-sha384",
+                "sidh-p434-sha384",
+                "sidh-p503-sha384",
+                "sidh-p610-sha384",
+                "sidh-p751-sha384",
+                "sidh-p434-compressed-sha384",
+                "sidh-p503-compressed-sha384",
+                "sidh-p610-compressed-sha384",
+                "sidh-p751-compressed-sha384",
+                "hqc-128-1-cca2-sha384",
+                "hqc-192-1-cca2-sha384",
+                "hqc-192-2-cca2-sha384",
+                "hqc-256-1-cca2-sha384",
+                "hqc-256-2-cca2-sha384",
+                "hqc-256-3-cca2-sha384",
+                "ecdh-sha2-nistp521",
+                "ecdh-sha2-nistp256",
+                "ecdh-sha2-nistp384",
+                "curve25519-sha256",
+            ],
+        },
+        {
+            "type": "pickString",
+            "id": "hostKeyAlgorithm",
+            "description": "Select HostKey Algorithm",
+            "options": [
+                "ssh-rsa3072-picnicl1fs",
+                "ssh-p256-picnicl1fs",
+                "ssh-rsa3072-picnic3l1",
+                "ssh-p256-picnic3l1",
+                "ssh-rsa3072-dilithium2",
+                "ssh-p256-dilithium2",
+                "ssh-rsa3072-falcon512",
+                "ssh-p256-falcon512",
+                "ssh-rsa3072-rainbowiaclassic",
+                "ssh-p256-rainbowiaclassic",
+                "ssh-p384-rainbowiiicclassic",
+                "ssh-p521-rainbowvcclassic",
+                "ssh-rsa3072-sphincsharaka128frobust",
+                "ssh-p256-sphincsharaka128frobust",
+                "ssh-rsa3072-sphincssha256128frobust",
+                "ssh-p256-sphincssha256128frobust",
+                "ssh-rsa3072-sphincsshake256128frobust",
+                "ssh-p256-sphincsshake256128frobust",
+                "ssh-picnicl1fs",
+                "ssh-picnic3l1",
+                "ssh-dilithium2",
+                "ssh-falcon512",
+                "ssh-rainbowiaclassic",
+                "ssh-rainbowiiicclassic",
+                "ssh-rainbowvcclassic",
+                "ssh-sphincsharaka128frobust",
+                "ssh-sphincssha256128frobust",
+                "ssh-sphincsshake256128frobust",
+                "ssh-ed25519",
+                "ssh-rsa",
+                "rsa-sha2-256",
+                "rsa-sha2-512",
+                "ssh-dss",
+                "ecdsa-sha2-nistp256",
+                "ecdsa-sha2-nistp384",
+                "ecdsa-sha2-nistp521",
+            ],
+        },
+        {
+            "type": "pickString",
+            "id": "publicKeyAlgorithm",
+            "description": "Select Public Key Algorithm",
+            "options": [
+                "ssh-rsa3072-picnicl1fs",
+                "ssh-p256-picnicl1fs",
+                "ssh-rsa3072-picnic3l1",
+                "ssh-p256-picnic3l1",
+                "ssh-rsa3072-dilithium2",
+                "ssh-p256-dilithium2",
+                "ssh-rsa3072-falcon512",
+                "ssh-p256-falcon512",
+                "ssh-rsa3072-rainbowiaclassic",
+                "ssh-p256-rainbowiaclassic",
+                "ssh-p384-rainbowiiicclassic",
+                "ssh-p521-rainbowvcclassic",
+                "ssh-rsa3072-sphincsharaka128frobust",
+                "ssh-p256-sphincsharaka128frobust",
+                "ssh-rsa3072-sphincssha256128frobust",
+                "ssh-p256-sphincssha256128frobust",
+                "ssh-rsa3072-sphincsshake256128frobust",
+                "ssh-p256-sphincsshake256128frobust",
+                "ssh-picnicl1fs",
+                "ssh-picnic3l1",
+                "ssh-dilithium2",
+                "ssh-falcon512",
+                "ssh-rainbowiaclassic",
+                "ssh-rainbowiiicclassic",
+                "ssh-rainbowvcclassic",
+                "ssh-sphincsharaka128frobust",
+                "ssh-sphincssha256128frobust",
+                "ssh-sphincsshake256128frobust",
+                "ssh-ed25519",
+                "ssh-rsa",
+                "rsa-sha2-256",
+                "rsa-sha2-512",
+                "ssh-dss",
+                "ecdsa-sha2-nistp256",
+                "ecdsa-sha2-nistp384",
+                "ecdsa-sha2-nistp521",
+            ],
+        },
+    ],
+}

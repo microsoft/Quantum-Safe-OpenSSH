@@ -1,0 +1,6 @@
+{%- for sig in config['sigs'] %}
+    {%- for variant in sig['variants'] %}
+	{ "ssh-{{ variant['name']|lower|replace('_','') }}", "{{ variant['name']|replace('_','') }}", NULL, KEY_{{ variant['name'] }}, 0, 0, 0 },
+    {%- endfor %}
+{%- endfor %}
+

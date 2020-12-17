@@ -1,0 +1,41 @@
+Index: b/openssh/debian/rules
+===================================================================
+--- a/openssh/debian/rules
++++ b/openssh/debian/rules
+@@ -60,6 +60,16 @@
+ confflags += --with-privsep-path=/run/sshd
+ confflags += --with-pid-dir=/run
+ 
++# OQS specific flags
++confflags += --with-ssl-dir=/usr/include
++confflags += --with-ldflags=-L/usr/lib
++confflags += --with-liboqs-dir=$(CURDIR)/../liboqs
++confflags += --with-libs=-lm
++
++# Configuration cache
++# confflags += --config-cache
++# confflags += --cache-file=$(CURDIR)/../pqc-cache
++
+ # The Hurd needs libcrypt for res_query et al.
+ ifeq ($(DEB_HOST_ARCH_OS),hurd)
+ confflags += --with-libs=-lcrypt
+@@ -94,7 +104,7 @@
+ confflags_udeb += --with-default-path=/usr/local/bin:/usr/bin:/bin --with-superuser-path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ 
+ # Compiler flags.
+-cflags := $(CPPFLAGS) $(CFLAGS)
++cflags := $(CPPFLAGS) $(CFLAGS) -mno-bmi -mno-bmi2
+ cflags += -DSSH_EXTRAVERSION=\"$(SSH_EXTRAVERSION)\"
+ cflags_udeb := -Os
+ cflags_udeb += -DSSH_EXTRAVERSION=\"$(SSH_EXTRAVERSION)\"
+Index: b/openssh/debian/systemd/ssh.service
+===================================================================
+--- a/openssh/debian/systemd/ssh.service
++++ b/openssh/debian/systemd/ssh.service
+@@ -1,5 +1,5 @@
+ [Unit]
+-Description=OpenBSD Secure Shell server
++Description=OpenBSD Secure Shell server (Quantum-Safe)
+ Documentation=man:sshd(8) man:sshd_config(5)
+ After=network.target auditd.service
+ ConditionPathExists=!/etc/ssh/sshd_not_to_be_run

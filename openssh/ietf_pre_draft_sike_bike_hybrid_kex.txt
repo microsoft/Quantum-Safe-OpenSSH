@@ -1,0 +1,1176 @@
+
+
+
+
+T. Hansen
+M. Campagna
+E. Crockett
+Amazon
+June 21, 2018
+
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the Secure Shell Transport
+                                 Layer
+                      draft-ietf-ssh-hybrid-kex-XY
+
+Abstract
+
+   _This document is not submitted to IETF_
+
+   This document defines hybrid key exchange methods based on classical
+   ECDH key exchange and the post-quantum key exchange schemes SIKE and
+   BIKE.  The hybrid key exchange methods are defined for use in the SSH
+   Transport Layer Protocol.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on December 23, 2018.
+
+Copyright Notice
+
+   Copyright (c) 2018 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (https://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+
+
+
+Hansen, et al.                         [Page 1]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+1.  Introduction
+
+   This document defines a hybrid key exchange method for SSH in
+   abstract terms.  It further provides two concrete instantiantions of
+   this abstract hybrid key exchange method by combining ECDH with
+   either SIKE or BIKE.
+
+   Secure Shell (SSH) [RFC4251] performs key establishment using key
+   exchange methods based exclusively on Diffie-Hellman style schemes.
+   The cryptographic security of these Diffie-Hellman style schemes rely
+   on certain instances of the discrete logarithm problem being
+   computationally infeasable to solve for adversaries.  However, when
+   sufficiently large quantum computers becomes available these
+   instances would no longer be computationally infeasable rendering the
+   current key exchange methods in SSH insecure.  While large quantum
+   computers are not available today an adversary can record the
+   encrypted communication sent between the client and server in an SSH
+   session and then later decrypt the communication when sufficiently
+   large quantum computers become available.  This kind of attack is
+   known as a "record-and-harvest" attack.
+
+   This document proposes to solve the problem by extending the SSH
+   transport layer protocol [RFC4253] with hybrid key exchange methods.
+   A hybrid key exchange methods maintain the same level of security
+   provided by current key exchange methods, but also add quantum
+   resistantance.  The security provided by the individual key exchange
+   scheme in a hybrid key exchange method is independent.  This means
+   that the hybrid key exchange method will always be at least as secure
+   as the most secure key exchange scheme executed as part of the hybrid
+   key exchange method.  See Section 11 for a more comprehensive
+   security analysis.
+
+   The reason for proposing the use of hybrid key exchange methods, is
+   that the current quantum-resistant key exchange schemes have not yet
+   been subject to extensive cryptanalysis.  Hence, such schemes do not
+   have the same level of trust as associated with key exchange schemes
+   that have existed for a long time and which have been subject to
+   extensive cryptanalysis.
+
+   This document is concerned with SSH key exchange methods.  Signature
+   algorithms used to establish an SSH sessions, in particular the use
+   of post-quantum signature algorithms, is out of scope for this
+   document.
+
+
+
+
+Hansen, et al.                         [Page 2]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   Implementation of this specification requires familiarity with the
+   SSH RFCs [RFC4250], [RFC4251], [RFC4253], the ECC standard [SEC1],
+   and the post-quantum algorithm specs SIKE [SIKE] and BIKE [BIKE].
+   The purpose of this document is to provide SSH implementation details
+   and not details of the specification of the cryptographic algorithms
+   used.  These can be found in their respective references.
+
+1.1.  Terminology
+
+   Key exchange scheme: Used to describe a key exchange primitive.  The
+   key exchange primitive defines the mathematical operations used to
+   execute the scheme.
+
+   Key exchange methods: Used to describe an SSH named key exchange
+   scheme, describing a specific SSH implementation of a key exchange
+   scheme.
+
+2.  Notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   The data types byte, string and mpint are to be intepreted in this
+   document as described in [RFC4251].
+
+   Protocol fields and possible values to fill them are defined in this
+   document.  Protocol fields will be defined in the message
+   definitions, together with a data type appearing before the field
+   separated by a whitespace.  In addition, an optional piece of
+   information identifying the field will appear after the field,
+   separated by a comma and a whitespace.  As an example, the
+   (hypothetical) message SSH_MSG_EXAMPLE is defined as follows:
+
+      byte SSH_MSG_EXAMPLE
+
+      string str, information identifying str
+
+   Throughout this document, when the fields are referenced, they will
+   appear within single quotes.  When the values to fill those fields
+   are referenced, they will appear within double quotes.  Using the
+   above example, possible values for 'str' are "foo" or "bar".
+
+3.  Hybrid Key Exchange
+
+   A hybrid key exchange produces a shared secret by running more than
+   one key exchange scheme concurrently and combining the resulting
+   shared secrets from each key exchange scheme into a single shared
+
+
+
+Hansen, et al.                         [Page 3]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   secret.  This document only defines hybrid key exchanges that run two
+   key exchange schemes concurrently.  Section 3.1 provides an overview
+   of the SSH-specific hybrid key exchange construction.  In Section 3.2
+   an abstract hybrid key exchange method is defined.  The key exchange
+   schemes used to instantiate the abstract hybrid key exchange method
+   are defined in Section 4, with specific hybrid key exchange method
+   instantiations defined in Section 5.
+
+   The hybrid key exchange methods defined in this document provide
+   explicit server authentication as defined in [RFC4253] using a
+   signature on the exchange hash.  The public key algorithm for signing
+   is negotiated with the SSH_MSG_KEXINIT message, which also negotiates
+   the method name of the hybrid key exchange.  The method name of the
+   hybrid key exchange determines the specific key exchange method as
+   well as the hash function used to compute the exchange hash.
+   Section 6 lists the set of method names for the hybrid key exchange
+   methods defined in this document.
+
+3.1.  Hybrid Key Exchange Protocol Overview
+
+   The following diagram is a high-level representation of the SSH key
+   exchange defined in [RFC4253]:
+
+   Client                      Server
+   ------                      ------
+   SSH_MSG_KEXINIT <-----> SSH_MSG_KEXINIT
+
+           |-----------------------|
+           |Key exchange method run|
+           |-----------------------|
+
+   SSH_MSG_NEWKEYS <-----> SSH_MSG_NEWKEYS
+
+   After both sides have sent the SSH_MSG_KEXINIT message, the key
+   exchange method is run.  The key exchange method may involve
+   exchanging several messages.  A key exchange method produces two
+   values: an SSH shared secret K and an exchange hash H.  These two
+   values are used to derive encryption and authentication keys.
+
+   A hybrid key exchange, in the context of SSH, is a particular key
+   exchange method that implements the abstract hybrid key exchange
+   method in Section 3.2.
+
+3.2.  Abstract Hybrid Key Exchange Method
+
+   This section defines the abstract structure of a hybrid key exchange
+   method.  The structure must be instantiated with two key exchange
+
+
+
+
+Hansen, et al.                         [Page 4]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   schemes.  Given key exchange schemes X and Y, the X+Y hybrid key
+   exchange method is implemented using the following exchange messages.
+
+   The client sends:
+
+      byte SSH_MSG_HY_X_Y_INIT
+
+      string C_X, X client message octet string
+
+      string C_Y, Y client message octet string
+
+   The server sends:
+
+      byte SSH_MSG_HY_X_Y_REPLY
+
+      string S_X, X server message octet string
+
+      string S_Y, Y server message octet string
+
+   The string name of the key exchange schemes X and Y will replace the
+   X and Y in the message names 'SSH_MSG_HY_X_Y_INIT' and
+   'SSH_MSG_HY_X_Y_REPLY' in specific instantiations.
+
+   A named hybrid key exchange name includes a named hash.  The exchange
+   hash H is the result of computing the HASH, where HASH is the hash
+   algorithm specified in the named hybrid key exchange method name,
+   over the concatenation of the following:
+
+      string V_C, client identification string (CR and LF excluded)
+
+      string V_S, server identification string (CR and LF excluded)
+
+      string I_C, payload of the client's SSH_MSG_KEXINIT
+
+      string I_S, payload of the server's SSH_MSG_KEXINIT
+
+      string C_X, X client message octet string
+
+      string C_Y, Y client message octet string
+
+      string S_X, X server message octet string
+
+      string S_Y, Y server message octet string
+
+      mpint K, SSH shared secret
+
+
+
+
+
+
+Hansen, et al.                         [Page 5]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   Let K_X and K_Y be the shared secrets resulting from key exchange
+   scheme X and Y, respectively.  The SSH shared secret K is computed
+   from K_X and K_Y following the process in Section 3.3.
+
+3.3.  Derivation of Encryption and Authentication Keys
+
+   Derivation of encryption and authentication keys MUST be done
+   according to Section 7.2 in [RFC4253] with the following
+   modifications.  The shared secrets K_X and K_Y are the output from
+   the two key exchange schemes X and Y, respectively, that instantiates
+   an abstract hybrid key exchange method (see Section 3.2).  The SSH
+   shared secret K is the concatenation of the two shared secrets K_X
+   and K_Y.  The order of concatenation is the order that the
+   corresponding key exchange scheme appears in the hybrid key exchange
+   method name.  K MUST be encoded as an mpint.  However, K_X and K_Y
+   MUST be encoded as octet strings.
+
+4.  Key Exchange Schemes
+
+   This section defines key exchange schemes that can be used to
+   instantiate the abstract hybrid key exchange scheme defined in
+   Section 3.2.
+
+4.1.  ECDH
+
+   The ECDH key exchange scheme is the Elliptic Curve Cofactor Diffie-
+   Hellman Primitive that can be found in Section 3.3.2 of [SEC1].  The
+   algorithm for generating the client ephemeral key (C_ECDH) and the
+   server ephemeral public key (S_ECDH) can be found in Section 3.2.1 of
+   [SEC1].  The ephemeral elliptic curve public keys (points) that must
+   be transmitted MUST be encoded into octet strings before they are
+   transmitted.  The transformation between elliptic curve points and
+   octet strings is specified in Sections 2.3.3 and 2.3.4 of [SEC1];
+   point compression MAY be used.  The shared secret (K_ECDH) resulting
+   from the ECDH key exchange is a field element xp.  The field element
+   xp MUST be encoded as an octet string following the conversion
+   algorithm defined in Section 2.3.5 of [SEC1].
+
+   C_ECDH is defined as the ECDH client message octet string.
+
+   S_ECDH is defined as the ECDH server message octet string.
+
+   ECDH is used throughout to refer to the key exchange scheme defined
+   in this section.
+
+   The ECDH key exchange scheme defined in this section, is identical to
+   the key exchange scheme used to construct the ECDH key exchange
+
+
+
+
+Hansen, et al.                         [Page 6]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   method defined in [RFC5656] except for the encoding of the shared
+   secret.
+
+4.2.  BIKE
+
+   The BIKE key exchange scheme is the key encapsulation mechanism (KEM)
+   bike-1 defined in Section 2.1 of [BIKE].  The following octet string
+   encodings for the public key (C_BIKE), ciphertext (S_BIKE) and shared
+   secret (K_BIKE) MUST be used:
+
+   The public key C_BIKE consists of two elements: f_0 and f_1. f_0 and
+   f_1 are elements of the polynomial ring R = F_2[X]/(X^{r} - 1).
+   C_BIKE MUST be encoded into a single octet string in the following
+   way: f_0 and f_1 are encoded into their octet representation using
+   the encoding function BIKE_2_OCTET defined in Section 10.1 and then
+   concatenated (f_0 followed by f_1) producing a single octet string.
+
+   The ciphertext S_BIKE consists of two elements: c_0 and c_1. c_0 and
+   c_1 are elements of the polynomial ring R = F_2[X]/(X^{r} - 1).
+   S_BIKE MUST be encoded into a single octet string in the following
+   way: c_0 and c_1 are encoded into their octet representation using
+   the encoding function BIKE_2_OCTET defined in Section 10.1 and then
+   concatenated (c_0 followed by c_1) producing a single octet string.
+
+   The shared secret K_BIKE returned by BIKE is the octet string
+   returned by the decaps algorithm of bike-1 (see Section 2.1.3
+   [BIKE]).  The KDF algorithm used in the decaps algorithm of bike-1
+   MUST be SHA-384 from the SHA2 family of hash functions [FIPS-180-3].
+
+   C_BIKE is defined as the BIKE client message octet string.
+
+   S_BIKE is defined as the BIKE server message octet string.
+
+   BIKE is used throughout to refer to the key exchange scheme defined
+   in this section.
+
+4.3.  SIKE
+
+   The SIKE key exchange scheme is the key encapsulation mechanism (KEM)
+   defined in Section 1.3.10 ('Algorithm 2') of [SIKE].  The specific
+   instantiation given in Section 1.4 of [SIKE] MUST be used.  The SIKE
+   key exchange scheme MUST follow the body of the functions KeyGen,
+   Encaps and Decaps defined in algorithm 2.  The starting curve E_0/
+   F_{p^2} is described in Section 1.3.2 of [SIKE] and fully specified
+   by the named parameter sets given in Section 7.2.  The following
+   encoding for the public key (P_C), ciphertext (C_S) and shared secret
+   (K_SIKE) MUST be used:
+
+
+
+
+Hansen, et al.                         [Page 7]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   The public key C_SIKE consists of one element pk_3 (the last output
+   from the 'KeyGen' algorithm, see 'Algorithm 2' in [SIKE].  C_SIKE
+   MUST be encoded into a single octet string in the following way: pk_3
+   must be used as input to the encoding function 'pktoos', defined in
+   Section 1.2.8 of [SIKE], producing a single octet string.
+
+   The ciphertext S_SIKE consist of two elements: c_0 and c_1.  S_SIKE
+   MUST be encoded into a single octet string in the following way:
+   Concate c_0 with c_1, producing a single octet string.
+
+   The shared secret K_SIKE returned by SIKE is the octet string
+   returned by the algorithm 'decaps', see 'Algorithm 2' [SIKE].
+
+   The public key C_SIKE element pk_3 and ciphertext S_SIKE elements c_0
+   and c_1 MUST be encoded into their single octet string
+   representation, using the encodings described above, before being
+   used as an input to the hash functions G and H, respectively.
+
+   C_SIKE is defined as the SIKE client message octet string.
+
+   S_SIKE is defined as the SIKE server message octet string.
+
+   SIKE is used throughout to refer to the key exchange scheme defined
+   in this section.
+
+5.  Hybrid Key Exchange Methods
+
+   Specification of message numbers for each instantiation of the
+   abstract key exchange method can be found in Section 8.
+
+5.1.  ECDH+BIKE
+
+   The ECDH+BIKE hybrid key exchange method is implemented using the
+   messages defined by the abstract hybrid key exchange method using
+   X=ECDH and Y=BIKE.
+
+   The value of the ECDH client message octet string 'C_X' is the ECDH
+   client message octet string "C_ECDH".  The value of the ECDH server
+   message octet string 'S_X' is the ECDH server message octet string
+   "S_SIKE".  Both values are defined in Section 4.1.
+
+   The value of the BIKE client message octet string 'C_Y' is the BIKE
+   client message octet string "C_BIKE".  The value of the BIKE server
+   message octet string 'S_Y' is the BIKE server message octet string
+   "S_BIKE".  Both values are defined in Section 4.2.
+
+   The curve used in ECDH MUST be the named curve nistp384 defined in
+   [SEC2].
+
+
+
+Hansen, et al.                         [Page 8]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+5.2.  ECDH+SIKE
+
+   The ECDH+BIKE hybrid key exchange method is implemented using the
+   messages defined by the abstract hybrid key exchange method using
+   X=ECDH and Y=SIKE.
+
+   The value of the ECDH client message octet string 'C_X' is the ECDH
+   client message octet string "C_ECDH".  The value of the ECDH server
+   message octet string 'S_X' is the ECDH server message octet string
+   "S_SIKE".  Both values are defined in Section 4.1.
+
+   The value of the SIKE client message octet string 'C_Y' is the SIKE
+   client message octet string "C_SIKE".  The value of the SIKE server
+   message octet string 'S_Y' is the SIKE server message octet string
+   "S_SIKE".  Both values are defined in Section 4.3.
+
+   The curve used in ECDH MUST be the named curve nistp384 defined in
+   [SEC2].
+
+6.  Hybrid Key Exchange Method Names
+
+   The hashing algorithm defined by each family of method names is
+   SHA-384 from the SHA2 family of hashing algorithms [FIPS-180-3] and
+   is represented by the string "sha384".
+
+6.1.  BIKE Domain Parameter Identifiers
+
+   This section specifies identifiers encoding named BIKE domain
+   parameters.  Each identifier will encode one parameter set.  The
+   identifier for the BIKE parameter sets BIKE1-L1, BIKE1-L3 and
+   BIKE1-L5 are the strings, respectively, "bike1-L1", "bike1-L3" and
+   "bike1-L5".
+
+6.2.  SIKE Domain Parameter Identifiers
+
+   This section specifies identifiers encoding named SIKE domain
+   parameters.  Each identifier will encode one parameter set.  The
+   identifier for the SIKE parameter sets SIKEp503, SIKEp751 and
+   SIKEp964 are the strings, respectively, "sike-503", "sike-751" and
+   "sike-964".
+
+6.3.  Hybrid Key Exchange ECDH+BIKE Names
+
+   Each ECDH+BIKE hybrid key exchange method name is a concatenation of
+   three parts:
+
+   1.  The string "ecdh-nistp384-"
+
+
+
+
+Hansen, et al.                         [Page 9]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   2.  One BIKE domain identifier
+
+   3.  The string "-sha384"
+
+   4.  The string "@openquantumsafe.org"
+
+   The order of concatenation is the order each part appear in the the
+   above list.
+
+6.4.  Hybrid Key Exchange ECDH+SIKE Names
+
+   Each ECDH+SIKE hybrid key exchange method name is concatenation of
+   three parts:
+
+   1.  The string "ecdh-nistp384-"
+
+   2.  One SIKE domain identifier
+
+   3.  The string "-sha384"
+
+   4.  The string "@openquantumsafe.org"
+
+   The order of concatenation is the order each part appear in the the
+   above list.
+
+7.  Named Domain Parameters
+
+7.1.  Named BIKE Domain Parameters
+
+7.1.1.  Required
+
+   Parameter names used in this section relates to parameter names used
+   in [BIKE].
+
+              +---------------+--------+--------+-----+-----+
+              | Parameter set | n      | r      | w   | t   |
+              +---------------+--------+--------+-----+-----+
+              | BIKE1-L1      | 20'326 | 10'163 | 142 | 134 |
+              |               |        |        |     |     |
+              | BIKE1-L3      | 39'706 | 19'835 | 206 | 199 |
+              |               |        |        |     |     |
+              | BIKE1-L5      | 65'498 | 32'749 | 274 | 264 |
+              +---------------+--------+--------+-----+-----+
+
+
+
+
+
+
+
+
+Hansen, et al.                        [Page 10]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+7.1.2.  Recommended
+
+   This document does not specify any recommended parameters for BIKE.
+
+7.2.  Named SIKE Domain Parameters
+
+7.2.1.  Required
+
+   Parameter names used in this section relates to parameter names used
+   in [SIKE].
+
+7.2.1.1.  SIKEp503
+
+   p =   00000004 066F5418 11E1E604 5C6BDDA7 7A4D01B9 BF6C87B7 E7DAF130
+      85BDA221 1E7A0ABF 809FFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF
+      FFFFFFFF FFFFFFFF FFFFFFFF
+
+   e2 =  000000FA
+
+   e3 =  0000009F
+
+   xQ20 =  00097453 912E12F3 DAF32EEF FD618BD9 3D3BBBF3 99137BD3
+      9858CADE FAE382E4 2D6E60A6 2FD62417 AD61A14B 60DB2612 5273EC98
+      0981325D 86E55C45 E3BB46B1
+
+   xQ21 =  00000000
+
+   yQ20 =  0009B666 40A4CC79 F82B68D7 26092338 12DF76E8 B0422EF3
+      527A1F2A 9915EFF1 6E094004 0DF4A15A 84A5ACF0 24FC2ED8 A50102A7
+      31E8D20D 033B4803 5B63DD62
+
+   yQ21 =  00000000
+
+   xP20 =  001F6D52 A7563BB9 356B98A1 16A0CA97 75DBB738 2EB29E24
+      E45299D8 939959EA EEB47FF3 113F6088 2D12103E 4B8B8CD2 B97DA146
+      57AE8C12 8BE82209 D2DDFCA9
+
+   xP21 =  002D44C3 FAD24E4C BDDC8A2D 9DE336A9 2A9912EE 6D09E2DD
+      5C33AB26 D60A268A C91F38E1 AF4C2D5B FA2B87DD 55C8CA60 19C6B0C0
+      8ED92B5A EB6C65A8 E06E53E9
+
+   yP20 =  003C9F7C 397283C0 871F78D9 F74ECC0A 8F89579C CBEF8FE6
+      0D07338A F0A0322E 3F0C66CA 826AA5BF 85EB5366 6C272C8E AEC9B808
+      B3B78E64 22330617 AC23D6F2
+
+   yP21 =  0038222A E95DA234 ABD1B90F D897C2E2 E7995B2C 0006DC92
+      CC079B7C 60C94DCA E9961CC7 A4BAEAC9 D294F6D5 760D4D65 4821193A
+      E92AD42A C0047ADE 55C343FC
+
+
+
+Hansen, et al.                        [Page 11]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   xR20 =  00173775 ECBEC79C 78FD1ED5 FE36075A ACE1F53F 8FFB97D2
+      A7E80DFC 2875E77E C72D1D4A 99E13353 EC9D147B ADD96126 948A72B3
+      0BDD7CEB AD7B54F8 DDB5CD06
+
+   xR21 =  0002EAA2 24DDDA14 9BBBB908 9D2B2C47 1D068ECA 203465CE
+      97DBC1C8 ED0EBB0F F90E4FBE 7E266BBA 99CBAE05 1797B4D3 5D28E36C
+      1B1CB994 AEEED1CB 59FE5015
+
+   xQ30 =  001E7D6E BCEEC9CF C47779AF FD696A88 A971CDF3 EC61E009
+      DF55CAF4 B6E01903 B2CD1A12 089C2ECE 106BDF74 5894C14D 7E39B699
+      7F70023E 0A23B4B3 787EF08F
+
+   xQ31 =  00000000
+
+   yQ30 =  002EC0AA EF9FBBDD 75FBDA11 DA19725F 79E842FB C355071F
+      D631C1CD F90E08E6 01929FAE C5DAEB0D 96BBB4AD 50FC7C8A D47064F0
+      5C06DC5D 4AAE61CC CEFF1F26
+
+   yQ31 =  00000000
+
+   xP30 =  0021B709 8B640A01 D88708B7 29837E87 0CFF9DF6 D4DF86D8
+      6A7409F4 1156CB5F 7B851482 2730940C 9B51E0D9 821B0A67 DD7ED98B
+      9793685F A2E22D6D 89D66A4E
+
+   xP31 =  002F37F5 75BEBBC3 3851F75B 7AB5D89F C3F07E4D F3CC5234
+      9804B8D1 7A17000A 42FC6C57 34B9FCFD E669730F 3E8569CE B53821D3
+      E8012F7F 391F5736 4F402909
+
+   yP30 =  0000078F 8A30AB36 B301BDF6 72D9E351 8AF741F8 227CC95A
+      9F351B99 623A826D E3F8D90D D6ED42FF 298E394E 77B7AEFE E6010CDF
+      34A7DE9F 9E239B10 3E7B3EEE
+
+   yP31 =  0037F3C6 00488EBB 6B11462C 4CAFC41C D5DC611A 9B0C804E
+      3BF50D6D 8F75C4E7 A136E29E 00D80EB8 653CA830 F2AED61D 04F9F3A8
+      317F7916 E016F273 3B828AC0
+
+   xR30 =  000D4818 D120A24A BF48DB51 D129E6B1 F24F4BBB 2C16FACC
+      0C8C0632 3EEEC2FA 5B5E887E 17226417 B1907310 BFE6784F DEBBAC8C
+      2A9ABBE7 53F52259 A7B7D70E
+
+   xR31 =  0019E75F 0F03312D 22CBBF15 3747525D 89E5155B ABB8BF0C
+      130CB567 CA532F69 AAF57EA7 682B9957 021D9041 4433ABBE EDC233E9
+      08218578 1C16724C 8C356777
+
+
+
+
+
+
+
+
+Hansen, et al.                        [Page 12]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+7.2.1.2.  SIKEp751
+
+   p =   00000004 066F5418 11E1E604 5C6BDDA7 7A4D01B9 BF6C87B7 E7DAF130
+      85BDA221 1E7A0ABF 809FFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF
+      FFFFFFFF FFFFFFFF FFFFFFFF
+
+   e2 =  00000174
+
+   e3 =  000000EF
+
+   xQ20 =  00003E82 027A38E9 429C8D36 FF46BCC9 3FA23F89 F6BE06D2
+      B1317AD9 04386217 83FDB7A4 AD3E83E8 6CAE096D 5DB822C9 8E561E00
+      8FA0E3F3 B9AC2F40 C56D6FA4 A58A2044 9AF1F133 5661D14A B7347693
+      63264608 6CE3ACD5 4B0346F5 CCE233E9
+
+   xQ21 =  00000000
+
+   yQ20 =  00003BBF 8DCD4E7E B6236F5F 598D56EB 5E15915A 755883B7
+      C331B043 DA010E6A 163A7421 DFA8378D 1E911F50 BF3F721A 8ED5950D
+      80325A8D 0F147EF3 BD0CFEC5 236C7FAC 9E69F7FD 5A99EBEC 3B5B8B00
+      0F8EEA73 70893430 12E0D620 BFB341D
+
+   yQ21 =  00000000
+
+   xP20 =  00005492 1C31F0DC 9531CB89 0FC5EC66 DF2E7F0D 55761363
+      C6E375DA 69B0682C ABE5C0FF FCBE6E1A D46563F0 42FA06B9 F207FCF3
+      CDD26736 52828FF5 0C3F7B75 5C0BE072 950D16CA 747C1467 75C0267A
+      401FFC73 8B03A49E 9A36B395 72AFB363
+
+   xP21 =  00002884 9BC0D81E 01993137 A5B63D6E 633C4E97 AB4FF118
+      CCF63DFE 623092AC 86B6D4A9 B751797C BA1A1775 00E9EB5A F7852B7D
+      F02C3348 44D652EF C4729178 A1DBAD8C A47BB7E7 57C6D43B 799811A6
+      3BEBE649 C18101F0 3AD752CD CD73BF66
+
+   yP20 =  00001961 19D87272 DC3AA722 3476C8C3 269D48CA EFAE692F
+      68DCF2D6 E1BEB5B9 7525D502 6C157C7C 740B41AD E80A8CF2 E1E0B37E
+      5F5FD4ED 88235BF7 404BE391 89C137E2 1C035EF6 339D7FAC BA38E72D
+      69043710 E76266A5 FC14EFB9 5E5FBC7C
+
+   yP21 =  0000D3AC 09A67D59 CC8D78B0 FA6681AE 78BDF0C8 F558E386
+      6005E435 5B0B1993 18D9CDD6 7C0A7DB2 34F9EA1E C4C5F1E5 9168B7DB
+      D14281F0 9E8DF904 A3D574CA D526DC5A 3667490A DE1A4C13 B09F7B11
+      5C4E488F D4DD5F76 70B58973 22AD41D
+
+   xR20 =  000022A0 B5A35A2B 0C56135A 7CEC5CFB 97964A7C 6226FE90
+      9F374362 A8ECA3AB 14A1B7B0 C87AC875 DCE5888D 83B623BF 0011A4AC
+      138F62EF 6B2D2D84 F636548A 9F920F23 8336E5A3 6E45E405 5940E3C9
+      4385B8FC 53743964 32EEF2AE 178CEFDD
+
+
+
+Hansen, et al.                        [Page 13]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   xR21 =  00000F9C 4AFCDA80 9C3358B0 96B250C6 9B20310F DF2EF631
+      711AA4EF EC49A4E7 6483F320 B793F2EB C63365EE D14AA3F6 EA33FEB5
+      6796F011 BA6C6DFB 4D0A00AA C4D27866 46D914AD 026CBB4A 592EC74B
+      5485372E 51382D44 528DD491 B83D9547
+
+   xQ30 =  00002F1D 80EF06EF 960A01AB 8FF409A2 F8D5BCE8 59ED725D
+      E145FE2D 525160E0 A3AD8E17 B9F9238C D5E69CF2 6DF23742 9BD37786
+      59023B9E CB610E30 288A7770 D3785AAA A4D646C5 76AECB94 B919AEED
+      D9E1DF56 6C1D26D3 76ED2325 DCC93103
+
+   xQ31 =  00000000
+
+   yQ30 =  00000127 A46D082A 1ACAF351 F09AB55A 15445287 ED1CC55D
+      C3589212 3951D4B6 E302C512 9C049EEB 399A6EDB 2EEB2F9B 0A94F06C
+      DFB3EADE 76EBA0C8 419745E9 7D12754F 00E898A3 15B52912 2CFE3CA6
+      BBC6BAF5 F6BA40BB 91479226 A0687894
+
+   yQ31 =  00000000
+
+   xP30 =  000005FD 1A3C4DD0 F6309741 96FED351 9152BC70 98B9E2B1
+      21ECA46B D10A5CC9 F4BCC6C6 89B8E4C0 63B37980 75FCEE6E DAA9EB10
+      8B3CD004 95CF04DD 8CE4A08F BE685A12 7D40E45F 4CF45098 A578DEB4
+      43686993 94C43BFC 9BC5E000 52F78E8D
+
+   xP31 =  00002B88 A03360B3 38954773 2C9140C0 5DEA6516 881FE108
+      211BE887 CC43FCB8 0C06A1D8 6FF5457D 3BB7DB93 6394EC33 821AA393
+      33A60AF8 4B537974 CFA0BA82 87D699D2 BF79BA55 9026C64A 6ED61050
+      1D2357C1 0B9A6C8F 83742492 2275ACBF
+
+   yP30 =  000053B5 5053E3F0 4FC315EF B1B7B2C4 AFCB4FEF 12CE744A
+      F3B243C6 E6B1417E 94A78D49 80DDE181 89646492 3E01AACC 3DA040A0
+      747CA675 54A35268 4DA207C4 9022D930 732DF6BD 0BF37E1F 5C169176
+      69A70F88 059C1C73 9A79D7CF A0C529D9
+
+   yP31 =  0000044E 44196909 252ECD7B 91643238 15294F02 AED22C4E
+      4EB43D2C E2BC5F29 EB575D45 CA8B6B4C 4242E369 AE3A1EFC 844E9D1C
+      57B0AE33 74BC2CED AD16B0C6 99158332 E2D9AB3F 0025C034 8C5F70FD
+      C4DD7C48 65E64B8B 843F03D8 07447D5E
+
+   xR30 =  0000077B 3BB69009 428A327D 43CA6016 9715F547 454F88CD
+      017B32DF 58A7252C 2B3C3D00 D52CCD31 33D54041 D8BCAEA2 91F20572
+      02328712 CD395575 CD7CCD3C E70C0A1E BF633BA9 46559458 878F41F9
+      FDD1727E 2C31125B 2FE5B713 06704829
+
+   xR31 =  00006D91 393A57DB F47FD6DC F841F17E CD719CAE 1D33C683
+      2A75B0F1 68855BCC 38D2A479 2DFF9BC8 6DEACA10 B1AA808D 539B167D
+      73BBA321 68687FA3 F85AE93A 1ADDE5BD 1FD5B681 DCC6C344 54D44969
+      76C22D80 C95E42B1 2576FC0F B4074B9F
+
+
+
+Hansen, et al.                        [Page 14]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+7.2.1.3.  SIKEp964
+
+   p =   00000008 6B5BFF76 43C64F7A 10028248 AD4FC4B1 50CBAA75 A2A1FA44
+      CBAB2451 35469BAB 093F2B8D AD5281E7 E56EF6AA 57A94749 ABB38EAB
+      467ACDE5 451CD4BF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF
+      FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF
+      FFFFFFFF FFFFFFFF FFFFFFFF
+
+   e2 =  000001E6
+
+   e3 =  0000012D
+
+   xQ20 =  00000001 CD5AEB4E 02DBE2CE B712A45E ED7720D3 EA94116F
+      1E45C834 FDFF3A86 7BBB267B F8F5F9B1 9C369F7A FE141B85 D591243E
+      7310B6D0 2E78DB88 8615254D F178C1F7 5F2BDAF7 03E83BB9 7DBCDC3D
+      FDB60BA3 85EC8F42 D4AD1505 21ECA6EC 4D3086A7 783698A7 1544E10A
+      45EA605E 1B86A894 7F14FA2E 03845DAE
+
+   xQ21 =  00000000
+
+   yQ20 =  00000002 2E751F1F 60841CF4 E8D4D3BD 8D400F58 9761CA1F
+      71A9C1F3 83C0FE55 3E6492DB E1F78D5F 9A768920 B682786E 8125398F
+      765A481B 32913561 FD16B270 19D9C10C 4F9062AC 1513FEB2 FE942DD2
+      2AC53F6E C319C4D1 8A53A481 430F3DFA 22E57EDA 0D067C37 F91EA8F1
+      3E4B1C65 4E974856 781F8E0A 397ED362
+
+   yQ21 =  00000000
+
+   xP20 =  00000006 ED767E28 04975D81 80368FB9 A72CE64E 838A5497
+      4865BFF1 A86AEF07 D6171A8A 4DF351F1 D4C94AAF 82BD6EBD 396F3342
+      48282F50 73178AB5 7B906BEF 89A2A152 A10D04A5 B20A0FFF 96B0B48F
+      0599FC9B D2AD52E0 81BB7FEA 7B5E8BF4 C3B0AB13 0731F4C5 A974CFA5
+      AD678121 7A20F9EC D30691D9 D1941D03
+
+   xP21 =  00000003 FE63FBDC A589518A 3DA694EC C8B65934 6693C45B
+      D8AC86B6 F0C778CF 290C9F42 9163FEF6 4AFAD182 ADE1B0C4 DFC8CF29
+      C35455C7 BA69C225 59F2E0D4 20AE05BB 0AE3ADC0 9A4A0AF2 8CE1A1C5
+      93171033 7AA68884 EFCCD60A C76FD3F1 7ED50205 305509E0 5955F60D
+      5008D788 B83F5FA4 57FD79EC DC7179D1
+
+   yP20 =  00000000 4E0A8662 85403BC0 408F9BCA 912025E3 17111896
+      1C865461 2AE20CEE AF91A98A 4F278EAE BB704602 8AD90CD9 5B99BF6B
+      34233CD4 B084B2CA 4598DF3A 6D4839CA 6EA493ED 420CF4C1 3A1F37F1
+      EC59620F 08693649 C72380A8 479E3753 93D3F4A7 59DF65F1 F74B4C65
+      6B79DF2A 5DA2959E FB006BDA D015D252
+
+   yP21 =  00000007 38846048 2319281B 78C6AC1F E1A91DB7 2A2C9AA3
+      4BEE1EBE A33EF043 AA1BFA0C 45894142 95E94C91 1E19E808 246B2A0A
+
+
+
+Hansen, et al.                        [Page 15]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+      98593958 E1F70888 E00332DE AE7D7FDB CA53398E 59530E5D 2A292463
+      7533F46C 4684373D DDB8D09B 2A75C307 3EA3C19E CF946FCB 2B428B6E
+      9CF93F22 33DD257C 5CAD4041 3F78CD1D
+
+   xR20 =  00000008 44F024B8 D993B660 48C9DA7F 1724AE2E 4C6162F8
+      4804FE3F E290FBEB 5ABF7DF2 5C395121 77C8E4A4 7A35F8EC D037B699
+      E34F58EF 675AE188 A1537838 A4DDBA69 FC7BC3FA CB7E3815 F3031244
+      AF1BCCE1 95AF45B4 2A587EE8 7A00BF2D A1E972D8 D662F4DC 5EC1CDB1
+      03D9EED2 215D4DD7 48004985 8925A63A
+
+   xR21 =  00000007 35F06B97 66B69FF9 17835EAD C539A00F FC186ED2
+      5947F701 FDA7EDEA F517039F 9B0DA172 1FDAE978 4838C75B 46A452DC
+      902EC8DD 1F462564 3B42C596 C2CF0404 5A7AA804 3F07C9A9 F82611D2
+      02F06834 512A3803 EF64650E 5309163F 25CCC336 CC852764 9E340F59
+      CDDFB51B 24D1C02E 8CB2653E 7A05B709
+
+   xQ30 =  00000003 81DBCAB1 EE7A4CA3 192CDA85 3F4E0F42 6522EB9D
+      3277421C 29D73CC4 F70BEFE7 009767C4 AE451600 3B237223 422C0E75
+      2ACD9D8F CE07263D 2C1D1013 08C0B97E DB8D4A8C 53C2064B 05DF9A61
+      E8216CA1 FFAC55F4 CA043972 52704945 C27136A0 56F6B5CF 8838B7F6
+      52BC16C1 392B5597 36CAF63B F0058A53
+
+   xQ31 =  00000000
+
+   yQ30 =  00000001 AFBFA81B 55C7D789 B6E89BC7 A311F3CE E4B733B0
+      FA5B7D56 D29A644B 596B7729 778E0773 F908D76E 0377B3CA 41C03D79
+      7DE4F0B7 985EB512 7D2151EC 4B6C1136 1AEB4CEA A3F776E0 8E4AD01B
+      7BB46074 D425C8A2 61E88B14 5C4153BF 67732E82 9986EB9D 29C88385
+      1EEEB87C C4FD96A0 84332542 6C108687
+
+   yQ31 =  00000000
+
+   xP30 =  00000004 FE46F0B0 09171C87 0FE840B7 FD0C3F14 93813CD1
+      25C2191C 9FA4BDE4 0941A603 124F1B81 BBFBEBFD AC06F808 07562639
+      FC61A579 62AE6E6B 7EE793CF 7B359746 FEB0DA11 0D704681 F83EF6B4
+      40DC5DED D2A42471 49D0A44C 452ED374 A394319A 8888A2A0 9CC4A0F3
+      5A07AA3D 248CF780 3E77EAD2 A4BEA308
+
+   xP31 =  00000006 DD4FC176 8E1ADEE5 4DC4E41C FAA7B810 4644DD69
+      0616D374 A9139013 FD847C2C D11BA6CA 4C4FC26A 63FE198B 666B7912
+      FBF889E9 91CF4B90 3651F441 4CD4AA50 BC02CE2E C986A7BF C1A8D364
+      F93410AD E3B959FF 1F036F36 EF3AFF88 D28DB500 8276C340 2158ADB4
+      A44BAECE D2AF6503 093FD8B6 A58EC136
+
+   yP30 =  000000003 EA8CDCF4 BC1C1B9D 2D449022 387D4DDE F05CE98C
+      B63E722B 0EA14717 C5FFA82E E107832E 5FE58C28 90185D2C 90D1BD94
+      AC13C69F D483AC80 66B1F1A4 844F7655 884B2379 0088A6DA 915FD709
+
+
+
+
+Hansen, et al.                        [Page 16]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+      EFE79A88 028108F4 D4DFBFAD BA65EFBB C5D621BA 31F12BE6 FB717D3B
+      1D8CD78D CD05B0D2 B7E87C10 3D1897C0
+
+   yP31 =  00000007 77607A21 85C04FBF CFA5EAF7 7F38F40F 42746739
+      748CA176 BBE31739 4BDA28F3 D971DFB9 CCB67207 E201FFB0 0A9A3E6B
+      9B7E804F BB6EF61E CEBDB8AC 68831E10 E8A72613 A47F132B D9A2309E
+      404FCFFF 7EA7BC87 AD448B8B 8798AB61 CA6F97DB 3B240887 9DEB8A9F
+      930C4EE4 69486FA1 129E89B6 7C084CD9
+
+   xR30 =  00000007 DE290085 EBBDC801 A1D6292D 1F2E89FF 463669ED
+      2F5F6C02 B8010A75 245C4D39 84002821 B8A243C7 56512A5F C1FC0867
+      A84583D7 6B0404E7 E73CEB70 71E2AE3B F43BFB77 A87BC98F DF888E28
+      5CD4A3C9 4E4D1795 009E41ED B8A3AD8F 81321138 E4A87B69 416AEFF0
+      94E541F4 8681863B AD30FB2F 32EA019A
+
+   xR31 =  00000007 A2A2DFA4 FB567336 60ACCB80 308A4482 B1A46D3B
+      9BB20313 F164CC80 9A3A6B4D 2FBC4357 4994354D C06D409F 9F647E82
+      F4F05D6C 5A70E340 DF4B9555 9787F82E AD7F7295 590FDCD9 D54B8001
+      094DC809 29EF4C5A BB8E388A 53AA0BD3 88D890B5 980F1FD1 9404025B
+      582C640D DFDA1BDF 46D37046 4A812732
+
+7.2.2.  Recommened
+
+   This document does not specify any recommended parameters for SIKE.
+
+8.  Summary of Message Numbers
+
+   The message numbers 30-39 are key-exchange-specific and in a private
+   namespace defined in [RFC4250] that may be redefined by any key
+   exchange method [RFC4253] without requiring an IANA registration
+   process.  The following message numbers have been defined in this
+   document.
+
+8.1.  ECDH+BIKE Message Numbers
+
+   #define SSH_MSG_HY_ECDH_BIKE_INIT \  30
+
+   #define SSH_MSG_HY_ECDH_BIKE_REPLY \  31
+
+8.2.  ECDH+SIKE Message Numbers
+
+   #define SSH_MSG_HY_ECDH_SIKE_INIT \  30
+
+   #define SSH_MSG_HY_ECDH_SIKE_REPLY \  31
+
+
+
+
+
+
+
+Hansen, et al.                        [Page 17]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+9.  Handling Long Messages
+
+   An implementaton adhering to [RFC4253] must be able to support
+   packets with an uncompressed payload length of 32768 bytes or less
+   and a total packet size of 35000 bytes or less (including
+   'packet_length', 'padding_length', 'payload', 'random padding', and
+   'mac').  These numbers represent what must be 'minimally supported'
+   by implementations.  This can present a problem when using post-
+   quantum key exchange schemes because some post-quantum schemes can
+   produce much larger messages than what is normally produced by
+   existing key exchange methods defined for SSH.  This document does
+   not define any named domain parameters (see Section 7) that cause any
+   hybrid key exchange method related packets to exceed the minimally
+   supported packet length.  This document does not define behaviour in
+   cases where a hybrid key exchange message cause a packet to exceed
+   the minimally supported packet length.
+
+10.  Defined Encoding Functions
+
+10.1.  Defined BIKE Encoding Functions
+
+   The input to the function BIKE_2_OCTET is an element, e, from a
+   polynomial ring R = F_2[X]/(X^{r}-1).
+
+   BIKE_2_OCTET(e) {
+       size := ((r + 7) / 8) //Round up to nearest multiple of 8
+       parse e: a_0 + a_1 * X + a_2 * X^2 + ... a_{r-1} X^{r-1}
+       out := a_0a_1a_2...a_{r-1} //little endian
+       append to out, a (size - r)-number of zero bits
+       return out
+   }
+
+11.  Security Considerations
+
+   The ECDH key exchange scheme defined in this document is identical to
+   the ECDH scheme defined in [RFC5656].  The security considerations
+   given in [RFC5656] therefore also applies to the ECDH key exchange
+   scheme defined in this document.
+
+   The key exchange schemes BIKE and SIKE defined in this document are
+   build from post-quantum key encapsulation methods (KEM) of the same
+   name.  Both KEMs are submitted to the NIST Post-Quantum Cryptography
+   Standardization process [NIST].  The claimed security of BIKE [BIKE]
+   and SIKE [SIKE] therefore does not have the same level of trust as
+   older cryptographic algorithms that have been subject to more
+   extensive cryptanalysis.
+
+
+
+
+
+Hansen, et al.                        [Page 18]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   The hybrid key exchange methods defined in this document maintain the
+   same level of classical security provided by ECDH, but also adds the
+   level of classical security and quantum resistance offered by BIKE or
+   SIKE (depending on the particular hybrid key exchange method).  The
+   hybrid key exchange methods will always be at least as secure as the
+   most secure key exchange scheme executed as part of the hybrid key
+   exchange method.  This previous statement is true against classical
+   adversaries.  However, the hybrid key exchange methods defined in
+   this document will only inheret quantum resistance from BIKE or SIKE
+   (depending on the particular hybrid key exchange method).
+
+   The combination of the shared secrets defined in Section 3.3
+   additively adds the entropy from both shared secrets.  That is, if
+   shared secret K_X has entropy a and shared secret K_Y has entropy b
+   then the entropy of the combined shared secret K is equal to a+b.
+
+12.  IANA Considerations
+
+   This document creates no new registries.
+
+13.  References
+
+13.1.  Normative References
+
+   [BIKE]     Aragon, N., Barreto, S. L. M., P., Bettaieb, S., Bideoux,
+              L., Blazy, O., Deneuville, J., Gaborit, P., Gueron, S.,
+              Guneysu, T., Melchor, C., Misoczki, R., Persichetti, E.,
+              Sendrier, N., Tillich, J., and G. Zemor, "BIKE: Bit
+              Flipping Key Encapsulation", BIKE Spec V2, March 2018,
+              <http://bikesuite.org/files/BIKE.pdf>.
+
+   [FIPS-180-3]
+              National Institute of Standards and Technology, "Secure
+              Hash Standard", FIPS 180-3, October 2008,
+              <http://www.secg.org/sec1-v2.pdf>.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC4250]  Ylonen, T. and C. Lonvick, Ed, "The Secure Shell (SSH)
+              Protocol Assigned Numbers", RFC 4250,
+              DOI 10.17487/RFC4250, January 2006,
+              <https://www.rfc-editor.org/info/rfc4250>.
+
+
+
+
+
+
+Hansen, et al.                        [Page 19]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   [RFC4251]  Ylonen, T. and C. Lonvick, Ed, "The Secure Shell (SSH)
+              Transport Layer Protocol", RFC 4251, DOI 10.17487/RFC4251,
+              January 2006, <https://www.rfc-editor.org/info/rfc4250>.
+
+   [RFC4253]  Ylonen, T. and C. Lonvick, Ed, "The Secure Shell (SSH)
+              Transport Layer Protocol", RFC 4253, DOI 10.17487/RFC4253,
+              January 2006, <https://www.rfc-editor.org/info/rfc4253>.
+
+   [RFC5656]  Stebila, D. and J. Green, "Elliptic Cure Algortihm
+              Integration in the Secure Shell Transport Layer",
+              RFC 5656, DOI 10.17487/RFC5656, December 2009,
+              <https://www.rfc-editor.org/info/rfc5656>.
+
+   [SEC1]     Standards for Efficient Cryptography Group, "Ellipctic
+              Curve Cryptography", SEC 1, May 2009,
+              <http://www.secg.org/sec1-v2.pdf>.
+
+   [SEC2]     Standards for Efficient Cryptography Group, "Ellipctic
+              Curve Cryptography", SEC 1, Jan 2010,
+              <http://www.secg.org/sec2-v2.pdf>.
+
+   [SIKE]     Jao, D., Azarderakhsh, R., Campagna, M., Costello, C.,
+              Feo, L., Hess, B., Jalali, A., Koziel, B., LaMacchia, B.,
+              Longa, P., Naehrig, M., Renes, J., Soukharev, V., and D.
+              Urbanik, "Supersingular Isogeny Key Encapsulation", SIKE
+              Spec V1, November 2017, <http://sike.org/files/SIKE.zip>.
+
+13.2.  Informative References
+
+   [NIST]     National Institute of Standards and Technology, "Post-
+              Quantum Cryptography Standardization", Jan 2018,
+              <https://csrc.nist.gov/Projects/Post-Quantum-Cryptography/
+              Post-Quantum-Cryptography-Standardization>.
+
+Authors' Addresses
+
+   Torben Brandt Hansen
+   Amazon
+
+   Email: htorben@amazon.com
+
+
+   Matthew Campagna
+   Amazon
+
+   Email: campagna@amazon.com
+
+
+
+
+
+Hansen, et al.                        [Page 20]
+
+PRE-DRAFT: Hybrid Key Exchange Integration in the  June 2018
+
+
+   Eric Crockett
+   Amazon
+
+   Email: erricron@amazon.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hansen, et al.          Expires December 23, 2018              [Page 21]

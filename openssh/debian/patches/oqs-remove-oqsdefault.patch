@@ -1,0 +1,750 @@
+This patch removes all the 'oqsdefault' algorithm instances from the OQS openssh-portable code.
+This is largely a manual process to create this patch.
+Some of the instances may be removed by modifying the templates, however many instances exist outside
+the template system and have to eliminated with 'find and replace'
+
+---
+ README.md                                           |    2 
+ configure.ac                                        |    1 
+ kex.c                                               |    2 
+ kex.h                                               |    2 
+ kexoqs.c                                            |    4 
+ myproposal.h                                        |    2 
+ oqs-template/generate.yml                           |   11 --
+ oqs-template/myproposal.h/list_hybrid_kexs.fragment |    1 
+ oqs-template/myproposal.h/list_pq_kexs.fragment     |    1 
+ oqs-test/test_openssh.py                            |    4 
+ oqs-utils.h                                         |    7 -
+ pathnames.h                                         |    6 -
+ readconf.c                                          |    3 
+ regress/unittests/kex/test_kex.c                    |    2 
+ servconf.c                                          |    6 -
+ ssh-add.c                                           |    3 
+ ssh-keygen.c                                        |   18 ----
+ ssh-keyscan.c                                       |   83 ++++++++------------
+ ssh-keysign.c                                       |    5 -
+ ssh-oqs.c                                           |    4 
+ ssh.c                                               |   73 ++++++++---------
+ ssh2.h                                              |    4 
+ sshconnect.c                                        |    3 
+ sshkey.c                                            |    3 
+ sshkey.h                                            |    3 
+ 25 files changed, 74 insertions(+), 179 deletions(-)
+
+--- a/README.md
++++ b/README.md
+@@ -55,7 +55,6 @@
+ 
+ The following quantum-safe algorithms from liboqs are supported (assuming they have been enabled in liboqs):
+ 
+-- `oqsdefault` (see [here](https://github.com/open-quantum-safe/openssh-portable/wiki/Using-liboqs-supported-algorithms-in-the-fork) for what this denotes)
+ - **BIKE**:`bike1-l1-cpa`, `bike1-l3-cpa`, `bike1-l1-fo`, `bike2-l3-fo`
+ - **Classic McEliece**: `classic-mceliece-348864`, `classic-mceliece-348864f`, `classic-mceliece-460896`, `classic-mceliece-460896f`, `classic-mceliece-6688128`, `classic-mceliece-6688128f`, `classic-mceliece-6960119`, `classic-mceliece-6960119f`, `classic-mceliece-8192128`, `classic-mceliece-8192128f`
+ - **FrodoKEM**:`frodo-640-aes`, `frodo-640-shake`, `frodo-976-aes`, `frodo-976-shake`, `frodo-1344-aes`, `frodo-1344-shake`
+@@ -78,7 +77,6 @@
+ 
+ The following digital signature algorithms from liboqs are supported (assuming they have been enabled in liboqs). Note that only L1 signature and all **Rainbow** variants are enabled by default, and should you wish to enable additional variants, consult [the "Code Generation" section of the documentation in the wiki](https://github.com/open-quantum-safe/openssh/wiki/Using-liboqs-supported-algorithms-in-the-for://github.com/open-quantum-safe/openssh/wiki/Using-liboqs-supported-algorithms-in-the-fork#code-generation).
+ 
+-- `oqsdefault` (see [here](https://github.com/open-quantum-safe/openssh-portable/wiki/Using-liboqs-supported-algorithms-in-the-fork) for what this denotes)
+ - **Dilithium**:`dilithium2`, `dilithium3`, `dilithium4`
+ - **MQDSS**:`mqdss3148`, `mqdss3164`
+ - **Picnic**:`picnicl1fs`, `picnicl1ur`, `picnicl3fs`, `picnicl3ur`, `picnicl5fs`, `picnicl5ur`, `picnic2l1fs`, `picnic2l3fs`
+--- a/kex.c
++++ b/kex.c
+@@ -106,7 +106,6 @@
+ 	{ KEX_ECDH_SHA2_NISTP384, KEX_ECDH_SHA2, NID_secp384r1,
+ 	    SSH_DIGEST_SHA384 },
+ #if defined(WITH_OQS) && defined(WITH_HYBRID_KEX)
+-	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_OQSDEFAULT_SHA384)
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_HYBRID_KEXS_START
+ #ifdef HAVE_BIKE
+ 	HYBRID_ECDH_OQS_KEX(KEX_ECDH_NISTP384_BIKE1_L1_CPA_SHA384)
+@@ -202,7 +201,6 @@
+ #endif /* OPENSSL_HAS_ECC */
+ #endif /* WITH_OPENSSL */
+ #if defined(WITH_OQS) && defined(WITH_PQ_KEX)
+-	PQ_OQS_KEX(KEX_OQSDEFAULT_SHA384)
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_PQ_KEXS_START
+ #ifdef HAVE_BIKE
+ 	PQ_OQS_KEX(KEX_BIKE1_L1_CPA_SHA384)
+--- a/kex.h
++++ b/kex.h
+@@ -69,7 +69,6 @@
+ 
+ #if defined(WITH_OQS) && defined(WITH_PQ_KEX)
+ 
+-#define KEX_OQSDEFAULT_SHA384 PQ_OQS_KEX_SUFFIX("oqsdefault-sha384")
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_PQ_KEXS_START
+ #define KEX_BIKE1_L1_CPA_SHA384 PQ_OQS_KEX_SUFFIX("bike1-l1-cpa-sha384")
+ #define KEX_BIKE1_L3_CPA_SHA384 PQ_OQS_KEX_SUFFIX("bike1-l3-cpa-sha384")
+@@ -140,7 +139,6 @@
+ 
+ #if defined(WITH_OQS) && defined(WITH_HYBRID_KEX)
+ 
+-#define KEX_ECDH_NISTP384_OQSDEFAULT_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-oqsdefault-sha384")
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_HYBRID_KEXS_START
+ #define KEX_ECDH_NISTP384_BIKE1_L1_CPA_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-bike1-l1-cpa-sha384")
+ #define KEX_ECDH_NISTP384_BIKE1_L3_CPA_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-bike1-l3-cpa-sha384")
+--- a/kexoqs.c
++++ b/kexoqs.c
+@@ -40,8 +40,6 @@
+ static const OQS_ALG oqs_alg_mapping[] = {
+ /* Hybrid key exchange methods */
+ #if defined(OPENSSL_HAS_ECC) && defined(WITH_HYBRID_KEX)
+-	{HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-oqsdefault-sha384"), OQS_KEM_alg_default,
+-	SSH2_MSG_HY_ECDH_OQSDEFAULT_INIT, SSH2_MSG_HY_ECDH_OQSDEFAULT_REPLY},
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_HYBRID_KEXS_START
+ #ifdef HAVE_BIKE
+ 	{HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-bike1-l1-cpa-sha384"), OQS_KEM_alg_bike1_l1_cpa,
+@@ -195,8 +193,6 @@
+ #endif /* defined(OPENSSL_HAS_ECC) && defined(WITH_HYBRID_KEX) */
+ /* PQ-only key exchange methods */
+ #ifdef WITH_PQ_KEX
+-	{PQ_OQS_KEX_SUFFIX("oqsdefault-sha384"), OQS_KEM_alg_default,
+-	SSH2_MSG_PQ_OQSDEFAULT_INIT, SSH2_MSG_PQ_OQSDEFAULT_REPLY},
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_PQ_KEXS_START
+ #ifdef HAVE_BIKE
+ 	{PQ_OQS_KEX_SUFFIX("bike1-l1-cpa-sha384"), OQS_KEM_alg_bike1_l1_cpa,
+--- a/oqs-template/generate.yml
++++ b/oqs-template/generate.yml
+@@ -1,16 +1,5 @@
+ sigs:
+   -
+-    # TODO: At the moment this should
+-    # always be enabled to avoid build errors.
+-    family: "OQSDEFAULT"
+-    variants:
+-      -
+-        enable: true
+-        name: "OQSDEFAULT"
+-        oqs_meth: "OQS_SIG_alg_default"
+-        mix_with: [{'name':'rsa3072'},
+-                   {'name': 'p256', 'curve':'NID_X9_62_prime256v1'}]
+-  -
+     family: "DILITHIUM"
+     variants:
+       -
+--- a/oqs-template/myproposal.h/list_hybrid_kexs.fragment
++++ b/oqs-template/myproposal.h/list_hybrid_kexs.fragment
+@@ -1,6 +1,5 @@
+ 
+ #define KEX_HYBRID_METHODS \
+-    HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-oqsdefault-sha384") \
+ {%- for kem in config['kems'] %}
+     KEX_HYBRID_METHOD_{{ kem['family'] }}{% if not loop.last -%}{{ " " }}\{%- endif -%}
+ {%- endfor %}
+--- a/oqs-template/myproposal.h/list_pq_kexs.fragment
++++ b/oqs-template/myproposal.h/list_pq_kexs.fragment
+@@ -1,6 +1,5 @@
+ 
+ #define KEX_PQ_METHODS \
+-    PQ_OQS_KEX_METHOD("oqsdefault-sha384") \
+ {%- for kem in config['kems'] %}
+     KEX_PQ_METHOD_{{ kem['family'] }}{% if not loop.last -%}{{ " " }}\{%- endif -%}
+ {%- endfor %}
+--- a/oqs-test/test_openssh.py
++++ b/oqs-test/test_openssh.py
+@@ -9,9 +9,9 @@
+     sig_algs += [
+ ##### OQS_TEMPLATE_FRAGMENT_LIST_SIGS_START
+     # post-quantum only sigs
+-    'ssh-oqsdefault','ssh-dilithium2','ssh-falcon512','ssh-mqdss3148','ssh-picnicl1fs','ssh-picnic3l1','ssh-qteslapi','ssh-rainbowiaclassic','ssh-rainbowiiicclassic','ssh-rainbowvcclassic','ssh-sphincsharaka128frobust','ssh-sphincssha256128frobust','ssh-sphincsshake256128frobust',
++    'ssh-dilithium2','ssh-falcon512','ssh-mqdss3148','ssh-picnicl1fs','ssh-picnic3l1','ssh-qteslapi','ssh-rainbowiaclassic','ssh-rainbowiiicclassic','ssh-rainbowvcclassic','ssh-sphincsharaka128frobust','ssh-sphincssha256128frobust','ssh-sphincsshake256128frobust',
+     # hybrid sigs
+-    'ssh-rsa3072-oqsdefault','ssh-p256-oqsdefault','ssh-rsa3072-dilithium2','ssh-p256-dilithium2','ssh-rsa3072-falcon512','ssh-p256-falcon512','ssh-rsa3072-mqdss3148','ssh-p256-mqdss3148','ssh-rsa3072-picnicl1fs','ssh-p256-picnicl1fs','ssh-rsa3072-picnic3l1','ssh-p256-picnic3l1','ssh-rsa3072-qteslapi','ssh-p256-qteslapi','ssh-rsa3072-rainbowiaclassic','ssh-p256-rainbowiaclassic','ssh-p384-rainbowiiicclassic','ssh-p521-rainbowvcclassic','ssh-rsa3072-sphincsharaka128frobust','ssh-p256-sphincsharaka128frobust','ssh-rsa3072-sphincssha256128frobust','ssh-p256-sphincssha256128frobust','ssh-rsa3072-sphincsshake256128frobust','ssh-p256-sphincsshake256128frobust',
++    'ssh-rsa3072-dilithium2','ssh-p256-dilithium2','ssh-rsa3072-falcon512','ssh-p256-falcon512','ssh-rsa3072-mqdss3148','ssh-p256-mqdss3148','ssh-rsa3072-picnicl1fs','ssh-p256-picnicl1fs','ssh-rsa3072-picnic3l1','ssh-p256-picnic3l1','ssh-rsa3072-qteslapi','ssh-p256-qteslapi','ssh-rsa3072-rainbowiaclassic','ssh-p256-rainbowiaclassic','ssh-p384-rainbowiiicclassic','ssh-p521-rainbowvcclassic','ssh-rsa3072-sphincsharaka128frobust','ssh-p256-sphincsharaka128frobust','ssh-rsa3072-sphincssha256128frobust','ssh-p256-sphincssha256128frobust','ssh-rsa3072-sphincsshake256128frobust','ssh-p256-sphincsshake256128frobust',
+ ##### OQS_TEMPLATE_FRAGMENT_LIST_SIGS_END
+ ]
+ 
+--- a/oqs-utils.h
++++ b/oqs-utils.h
+@@ -3,7 +3,6 @@
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_HYBRID_MACROS_START
+ #define IS_RSA_HYBRID_ALG_NAME(alg) ( \
+-				strcmp(alg, "ssh-rsa3072-oqsdefault") == 0 || \
+ 				strcmp(alg, "ssh-rsa3072-dilithium2") == 0 || \
+ 				strcmp(alg, "ssh-rsa3072-falcon512") == 0 || \
+ 				strcmp(alg, "ssh-rsa3072-mqdss3148") == 0 || \
+@@ -16,7 +15,6 @@
+ 				strcmp(alg, "ssh-rsa3072-sphincsshake256128frobust") == 0)
+ 
+ #define IS_RSA_HYBRID(alg) ( \
+-				alg == KEY_RSA3072_OQSDEFAULT || \
+ 				alg == KEY_RSA3072_DILITHIUM_2 || \
+ 				alg == KEY_RSA3072_FALCON_512 || \
+ 				alg == KEY_RSA3072_MQDSS_31_48 || \
+@@ -29,7 +27,6 @@
+ 				alg == KEY_RSA3072_SPHINCS_SHAKE256_128F_ROBUST)
+ 
+ #define IS_ECDSA_HYBRID(alg) ( \
+-				alg == KEY_P256_OQSDEFAULT || \
+ 				alg == KEY_P256_DILITHIUM_2 || \
+ 				alg == KEY_P256_FALCON_512 || \
+ 				alg == KEY_P256_MQDSS_31_48 || \
+@@ -48,7 +45,6 @@
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_PQ_KT_START
+ #define IS_OQS_KEY_TYPE(type) ( \
+-				(type) == KEY_OQSDEFAULT || \
+ 				(type) == KEY_DILITHIUM_2 || \
+ 				(type) == KEY_FALCON_512 || \
+ 				(type) == KEY_MQDSS_31_48 || \
+@@ -66,7 +62,6 @@
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_PQ_SWITCH_CASES_START
+ #define CASE_KEY_OQS \
+-	case KEY_OQSDEFAULT: \
+ 	case KEY_DILITHIUM_2: \
+ 	case KEY_FALCON_512: \
+ 	case KEY_MQDSS_31_48: \
+@@ -83,7 +78,6 @@
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_HYBRID_SWITCH_CASES_START
+ #define CASE_KEY_RSA_HYBRID \
+-	case KEY_RSA3072_OQSDEFAULT: \
+ 	case KEY_RSA3072_DILITHIUM_2: \
+ 	case KEY_RSA3072_FALCON_512: \
+ 	case KEY_RSA3072_MQDSS_31_48: \
+@@ -96,7 +90,6 @@
+ 	case KEY_RSA3072_SPHINCS_SHAKE256_128F_ROBUST
+ 
+ #define CASE_KEY_ECDSA_HYBRID \
+-	case KEY_P256_OQSDEFAULT: \
+ 	case KEY_P256_DILITHIUM_2: \
+ 	case KEY_P256_FALCON_512: \
+ 	case KEY_P256_MQDSS_31_48: \
+--- a/pathnames.h
++++ b/pathnames.h
+@@ -42,7 +42,6 @@
+ #define _PATH_HOST_XMSS_KEY_FILE	SSHDIR "/ssh_host_xmss_key"
+ #define _PATH_HOST_RSA_KEY_FILE		SSHDIR "/ssh_host_rsa_key"
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_OQS_KEY_FILES_START
+-#define _PATH_HOST_OQSDEFAULT_KEY_FILE SSHDIR "/ssh_host_oqsdefault_key"
+ #define _PATH_HOST_DILITHIUM_2_KEY_FILE SSHDIR "/ssh_host_dilithium2_key"
+ #define _PATH_HOST_FALCON_512_KEY_FILE SSHDIR "/ssh_host_falcon512_key"
+ #define _PATH_HOST_MQDSS_31_48_KEY_FILE SSHDIR "/ssh_host_mqdss3148_key"
+@@ -55,8 +54,6 @@
+ #define _PATH_HOST_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE SSHDIR "/ssh_host_sphincsharaka128frobust_key"
+ #define _PATH_HOST_SPHINCS_SHA256_128F_ROBUST_KEY_FILE SSHDIR "/ssh_host_sphincssha256128frobust_key"
+ #define _PATH_HOST_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE SSHDIR "/ssh_host_sphincsshake256128frobust_key"
+-#define _PATH_HOST_RSA3072_OQSDEFAULT_KEY_FILE SSHDIR "/ssh_host_rsa3072_oqsdefault_key"
+-#define _PATH_HOST_P256_OQSDEFAULT_KEY_FILE SSHDIR "/ssh_host_p256_oqsdefault_key"
+ #define _PATH_HOST_RSA3072_DILITHIUM_2_KEY_FILE SSHDIR "/ssh_host_rsa3072_dilithium2_key"
+ #define _PATH_HOST_P256_DILITHIUM_2_KEY_FILE SSHDIR "/ssh_host_p256_dilithium2_key"
+ #define _PATH_HOST_RSA3072_FALCON_512_KEY_FILE SSHDIR "/ssh_host_rsa3072_falcon512_key"
+@@ -117,7 +114,6 @@
+ #define _PATH_SSH_CLIENT_ID_ED25519	_PATH_SSH_USER_DIR "/id_ed25519"
+ #define _PATH_SSH_CLIENT_ID_XMSS	_PATH_SSH_USER_DIR "/id_xmss"
+ ///// OQS_TEMPLATE_FRAGMENT_DEFINE_OQS_ID_FILES_START
+-#define _PATH_SSH_CLIENT_ID_OQSDEFAULT _PATH_SSH_USER_DIR "/id_oqsdefault"
+ #define _PATH_SSH_CLIENT_ID_DILITHIUM_2 _PATH_SSH_USER_DIR "/id_dilithium2"
+ #define _PATH_SSH_CLIENT_ID_FALCON_512 _PATH_SSH_USER_DIR "/id_falcon512"
+ #define _PATH_SSH_CLIENT_ID_MQDSS_31_48 _PATH_SSH_USER_DIR "/id_mqdss3148"
+@@ -130,8 +126,6 @@
+ #define _PATH_SSH_CLIENT_ID_SPHINCS_HARAKA_128F_ROBUST _PATH_SSH_USER_DIR "/id_sphincsharaka128frobust"
+ #define _PATH_SSH_CLIENT_ID_SPHINCS_SHA256_128F_ROBUST _PATH_SSH_USER_DIR "/id_sphincssha256128frobust"
+ #define _PATH_SSH_CLIENT_ID_SPHINCS_SHAKE256_128F_ROBUST _PATH_SSH_USER_DIR "/id_sphincsshake256128frobust"
+-#define _PATH_SSH_CLIENT_ID_RSA3072_OQSDEFAULT _PATH_SSH_USER_DIR "/id_rsa3072_oqsdefault"
+-#define _PATH_SSH_CLIENT_ID_P256_OQSDEFAULT _PATH_SSH_USER_DIR "/id_p256_oqsdefault"
+ #define _PATH_SSH_CLIENT_ID_RSA3072_DILITHIUM_2 _PATH_SSH_USER_DIR "/id_rsa3072_dilithium2"
+ #define _PATH_SSH_CLIENT_ID_P256_DILITHIUM_2 _PATH_SSH_USER_DIR "/id_p256_dilithium2"
+ #define _PATH_SSH_CLIENT_ID_RSA3072_FALCON_512 _PATH_SSH_USER_DIR "/id_rsa3072_falcon512"
+--- a/readconf.c
++++ b/readconf.c
+@@ -2076,7 +2076,6 @@
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_XMSS, 0);
+ #ifdef WITH_PQ_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_PQ_ID_FILES_START
+-		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_OQSDEFAULT, 0);
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_DILITHIUM_2, 0);
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_FALCON_512, 0);
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_MQDSS_31_48, 0);
+@@ -2093,8 +2092,6 @@
+ #endif /* WITH_PQ_AUTH */
+ #ifdef WITH_HYBRID_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_HYBRID_ID_FILES_START
+-		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_RSA3072_OQSDEFAULT, 0);
+-		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_P256_OQSDEFAULT, 0);
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_RSA3072_DILITHIUM_2, 0);
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_P256_DILITHIUM_2, 0);
+ 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_RSA3072_FALCON_512, 0);
+--- a/regress/unittests/kex/test_kex.c
++++ b/regress/unittests/kex/test_kex.c
+@@ -197,7 +197,6 @@
+ 	do_kex("ecdh-sha2-nistp384");
+ 	do_kex("ecdh-sha2-nistp521");
+ #if defined(WITH_OQS) && defined(WITH_HYBRID_KEX)
+-	do_kex(KEX_ECDH_NISTP384_OQSDEFAULT_SHA384);
+ ///// OQS_TEMPLATE_FRAGMENT_DO_HYBRID_KEXS_START
+ #ifdef HAVE_BIKE
+ 	do_kex(KEX_ECDH_NISTP384_BIKE1_L1_CPA_SHA384);
+@@ -292,7 +291,6 @@
+ 	do_kex("diffie-hellman-group14-sha1");
+ 	do_kex("diffie-hellman-group1-sha1");
+ #if defined(WITH_OQS) && defined(WITH_OQ_KEX)
+-	do_kex(KEX_OQSDEFAULT_SHA384);
+ ///// OQS_TEMPLATE_FRAGMENT_DO_PQ_KEXS_START
+ #ifdef HAVE_BIKE
+ 	do_kex(KEX_BIKE1_L1_CPA_SHA384);
+--- a/servconf.c
++++ b/servconf.c
+@@ -285,8 +285,6 @@
+ #ifdef WITH_PQ_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_PQ_HOSTKEYS_START
+ 		servconf_add_hostkey("[default]", 0, options,
+-		    _PATH_HOST_OQSDEFAULT_KEY_FILE);
+-		servconf_add_hostkey("[default]", 0, options,
+ 		    _PATH_HOST_DILITHIUM_2_KEY_FILE);
+ 		servconf_add_hostkey("[default]", 0, options,
+ 		    _PATH_HOST_FALCON_512_KEY_FILE);
+@@ -315,10 +313,6 @@
+ #ifdef WITH_HYBRID_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_HYBRID_HOSTKEYS_START
+ 		servconf_add_hostkey("[default]", 0, options,
+-		    _PATH_HOST_RSA3072_OQSDEFAULT_KEY_FILE);
+-		servconf_add_hostkey("[default]", 0, options,
+-		    _PATH_HOST_P256_OQSDEFAULT_KEY_FILE);
+-		servconf_add_hostkey("[default]", 0, options,
+ 		    _PATH_HOST_RSA3072_DILITHIUM_2_KEY_FILE);
+ 		servconf_add_hostkey("[default]", 0, options,
+ 		    _PATH_HOST_P256_DILITHIUM_2_KEY_FILE);
+--- a/ssh-add.c
++++ b/ssh-add.c
+@@ -81,7 +81,6 @@
+ 	_PATH_SSH_CLIENT_ID_XMSS,
+ #ifdef WITH_PQ_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_PQ_ID_PATHS_START
+-	_PATH_SSH_CLIENT_ID_OQSDEFAULT,
+ 	_PATH_SSH_CLIENT_ID_DILITHIUM_2,
+ 	_PATH_SSH_CLIENT_ID_FALCON_512,
+ 	_PATH_SSH_CLIENT_ID_MQDSS_31_48,
+@@ -98,8 +97,6 @@
+ #endif /* WITH_PQ_AUTH */
+ #ifdef WITH_HYBRID_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_HYBRID_ID_PATHS_START
+-	_PATH_SSH_CLIENT_ID_RSA3072_OQSDEFAULT,
+-	_PATH_SSH_CLIENT_ID_P256_OQSDEFAULT,
+ 	_PATH_SSH_CLIENT_ID_RSA3072_DILITHIUM_2,
+ 	_PATH_SSH_CLIENT_ID_P256_DILITHIUM_2,
+ 	_PATH_SSH_CLIENT_ID_RSA3072_FALCON_512,
+--- a/ssh-keygen.c
++++ b/ssh-keygen.c
+@@ -307,15 +307,6 @@
+ 			name = _PATH_SSH_CLIENT_ID_XMSS;
+ 			break;
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_PQ_ID_PATHS_START
+-		case KEY_OQSDEFAULT:
+-			name = _PATH_SSH_CLIENT_ID_OQSDEFAULT;
+-			break;
+-		case KEY_RSA3072_OQSDEFAULT:
+-			name = _PATH_SSH_CLIENT_ID_RSA3072_OQSDEFAULT;
+-			break;
+-		case KEY_P256_OQSDEFAULT:
+-			name = _PATH_SSH_CLIENT_ID_P256_OQSDEFAULT;
+-			break;
+ 		case KEY_DILITHIUM_2:
+ 			name = _PATH_SSH_CLIENT_ID_DILITHIUM_2;
+ 			break;
+@@ -1153,7 +1144,6 @@
+ #endif /* WITH_XMSS */
+ #ifdef WITH_PQ_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_PQ_KT_START
+-		{ "oqsdefault", "OQSDEFAULT", _PATH_HOST_OQSDEFAULT_KEY_FILE },
+ 		{ "dilithium2", "DILITHIUM_2", _PATH_HOST_DILITHIUM_2_KEY_FILE },
+ 		{ "falcon512", "FALCON_512", _PATH_HOST_FALCON_512_KEY_FILE },
+ 		{ "mqdss3148", "MQDSS_31_48", _PATH_HOST_MQDSS_31_48_KEY_FILE },
+@@ -1171,7 +1161,6 @@
+ #ifdef WITH_HYBRID_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_HYBRID_KT_START
+ #ifdef WITH_OPENSSL
+-		{ "rsa3072_oqsdefault", "RSA3072_OQSDEFAULT", _PATH_HOST_RSA3072_OQSDEFAULT_KEY_FILE },
+ 		{ "rsa3072_dilithium2", "RSA3072_DILITHIUM_2", _PATH_HOST_RSA3072_DILITHIUM_2_KEY_FILE },
+ 		{ "rsa3072_falcon512", "RSA3072_FALCON_512", _PATH_HOST_RSA3072_FALCON_512_KEY_FILE },
+ 		{ "rsa3072_mqdss3148", "RSA3072_MQDSS_31_48", _PATH_HOST_RSA3072_MQDSS_31_48_KEY_FILE },
+@@ -1183,7 +1172,6 @@
+ 		{ "rsa3072_sphincssha256128frobust", "RSA3072_SPHINCS_SHA256_128F_ROBUST", _PATH_HOST_RSA3072_SPHINCS_SHA256_128F_ROBUST_KEY_FILE },
+ 		{ "rsa3072_sphincsshake256128frobust", "RSA3072_SPHINCS_SHAKE256_128F_ROBUST", _PATH_HOST_RSA3072_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE },
+ #ifdef OPENSSL_HAS_ECC
+-		{ "p256_oqsdefault", "P256_OQSDEFAULT", _PATH_HOST_P256_OQSDEFAULT_KEY_FILE },
+ 		{ "p256_dilithium2", "P256_DILITHIUM_2", _PATH_HOST_P256_DILITHIUM_2_KEY_FILE },
+ 		{ "p256_falcon512", "P256_FALCON_512", _PATH_HOST_P256_FALCON_512_KEY_FILE },
+ 		{ "p256_mqdss3148", "P256_MQDSS_31_48", _PATH_HOST_P256_MQDSS_31_48_KEY_FILE },
+@@ -2579,11 +2567,11 @@
+ 	    "usage: ssh-keygen [-q] [-b bits] [-t dsa | ecdsa | ed25519 | rsa"
+ #ifdef WITH_PQ_AUTH
+ 	    " |\n"
+-	    "                   oqsdefault | picnicL1FS | qteslaI | qteslaIIIsize | qteslaIIIspeed"
++	    "                    picnicL1FS | qteslaI | qteslaIIIsize | qteslaIIIspeed"
+ #endif
+ #ifdef WITH_HYBRID_AUTH
+ 	    " |\n"
+-	    "                   rsa3072_oqsdefault | p256_oqsdefault | rsa3072_picnicL1FS | p256_picnicL1FS |\n"
++	    "                     rsa3072_picnicL1FS | p256_picnicL1FS |\n"
+ 	    "                   rsa3072_qteslaI | p256_qteslaI | p384_qteslaIIIsize | p384_qteslaIIIspeed"
+ #endif
+ 	    "                  ]\n"
+@@ -2960,8 +2948,6 @@
+ 			    _PATH_HOST_XMSS_KEY_FILE, rr_hostname);
+ ///// OQS_TEMPLATE_FRAGMENT_PRINT_PQ_RR_START
+ 			n += do_print_resource_record(pw,
+-                 _PATH_HOST_OQSDEFAULT_KEY_FILE, rr_hostname);
+-			n += do_print_resource_record(pw,
+                  _PATH_HOST_DILITHIUM_2_KEY_FILE, rr_hostname);
+ 			n += do_print_resource_record(pw,
+                  _PATH_HOST_FALCON_512_KEY_FILE, rr_hostname);
+--- a/ssh-keyscan.c
++++ b/ssh-keyscan.c
+@@ -60,43 +60,40 @@
+ #define KT_ED25519		(1<<3)
+ #define KT_XMSS			(1<<4)
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_KT_MARKERS_START
+-#define KT_OQSDEFAULT ((uint64_t)1<<5)
+-#define KT_DILITHIUM_2 ((uint64_t)1<<6)
+-#define KT_FALCON_512 ((uint64_t)1<<7)
+-#define KT_MQDSS_31_48 ((uint64_t)1<<8)
+-#define KT_PICNIC_L1FS ((uint64_t)1<<9)
+-#define KT_PICNIC3_L1 ((uint64_t)1<<10)
+-#define KT_QTESLA_P_I ((uint64_t)1<<11)
+-#define KT_RAINBOW_IA_CLASSIC ((uint64_t)1<<12)
+-#define KT_RAINBOW_IIIC_CLASSIC ((uint64_t)1<<13)
+-#define KT_RAINBOW_VC_CLASSIC ((uint64_t)1<<14)
+-#define KT_SPHINCS_HARAKA_128F_ROBUST ((uint64_t)1<<15)
+-#define KT_SPHINCS_SHA256_128F_ROBUST ((uint64_t)1<<16)
+-#define KT_SPHINCS_SHAKE256_128F_ROBUST ((uint64_t)1<<17)
+-#define KT_RSA3072_OQSDEFAULT ((uint64_t)1<<18)
+-#define KT_P256_OQSDEFAULT ((uint64_t)1<<19)
+-#define KT_RSA3072_DILITHIUM_2 ((uint64_t)1<<20)
+-#define KT_P256_DILITHIUM_2 ((uint64_t)1<<21)
+-#define KT_RSA3072_FALCON_512 ((uint64_t)1<<22)
+-#define KT_P256_FALCON_512 ((uint64_t)1<<23)
+-#define KT_RSA3072_MQDSS_31_48 ((uint64_t)1<<24)
+-#define KT_P256_MQDSS_31_48 ((uint64_t)1<<25)
+-#define KT_RSA3072_PICNIC_L1FS ((uint64_t)1<<26)
+-#define KT_P256_PICNIC_L1FS ((uint64_t)1<<27)
+-#define KT_RSA3072_PICNIC3_L1 ((uint64_t)1<<28)
+-#define KT_P256_PICNIC3_L1 ((uint64_t)1<<29)
+-#define KT_RSA3072_QTESLA_P_I ((uint64_t)1<<30)
+-#define KT_P256_QTESLA_P_I ((uint64_t)1<<31)
+-#define KT_RSA3072_RAINBOW_IA_CLASSIC ((uint64_t)1<<32)
+-#define KT_P256_RAINBOW_IA_CLASSIC ((uint64_t)1<<33)
+-#define KT_P384_RAINBOW_IIIC_CLASSIC ((uint64_t)1<<34)
+-#define KT_P521_RAINBOW_VC_CLASSIC ((uint64_t)1<<35)
+-#define KT_RSA3072_SPHINCS_HARAKA_128F_ROBUST ((uint64_t)1<<36)
+-#define KT_P256_SPHINCS_HARAKA_128F_ROBUST ((uint64_t)1<<37)
+-#define KT_RSA3072_SPHINCS_SHA256_128F_ROBUST ((uint64_t)1<<38)
+-#define KT_P256_SPHINCS_SHA256_128F_ROBUST ((uint64_t)1<<39)
+-#define KT_RSA3072_SPHINCS_SHAKE256_128F_ROBUST ((uint64_t)1<<40)
+-#define KT_P256_SPHINCS_SHAKE256_128F_ROBUST ((uint64_t)1<<41)
++#define KT_DILITHIUM_2 ((uint64_t)1<<5)
++#define KT_FALCON_512 ((uint64_t)1<<6)
++#define KT_MQDSS_31_48 ((uint64_t)1<<7)
++#define KT_PICNIC_L1FS ((uint64_t)1<<8)
++#define KT_PICNIC3_L1 ((uint64_t)1<<9)
++#define KT_QTESLA_P_I ((uint64_t)1<<10)
++#define KT_RAINBOW_IA_CLASSIC ((uint64_t)1<<11)
++#define KT_RAINBOW_IIIC_CLASSIC ((uint64_t)1<<12)
++#define KT_RAINBOW_VC_CLASSIC ((uint64_t)1<<13)
++#define KT_SPHINCS_HARAKA_128F_ROBUST ((uint64_t)1<<14)
++#define KT_SPHINCS_SHA256_128F_ROBUST ((uint64_t)1<<15)
++#define KT_SPHINCS_SHAKE256_128F_ROBUST ((uint64_t)1<<16)
++#define KT_RSA3072_DILITHIUM_2 ((uint64_t)1<<17)
++#define KT_P256_DILITHIUM_2 ((uint64_t)1<<18)
++#define KT_RSA3072_FALCON_512 ((uint64_t)1<<19)
++#define KT_P256_FALCON_512 ((uint64_t)1<<20)
++#define KT_RSA3072_MQDSS_31_48 ((uint64_t)1<<21)
++#define KT_P256_MQDSS_31_48 ((uint64_t)1<<22)
++#define KT_RSA3072_PICNIC_L1FS ((uint64_t)1<<23)
++#define KT_P256_PICNIC_L1FS ((uint64_t)1<<24)
++#define KT_RSA3072_PICNIC3_L1 ((uint64_t)1<<25)
++#define KT_P256_PICNIC3_L1 ((uint64_t)1<<26)
++#define KT_RSA3072_QTESLA_P_I ((uint64_t)1<<27)
++#define KT_P256_QTESLA_P_I ((uint64_t)1<<28)
++#define KT_RSA3072_RAINBOW_IA_CLASSIC ((uint64_t)1<<29)
++#define KT_P256_RAINBOW_IA_CLASSIC ((uint64_t)1<<30)
++#define KT_P384_RAINBOW_IIIC_CLASSIC ((uint64_t)1<<31)
++#define KT_P521_RAINBOW_VC_CLASSIC ((uint64_t)1<<32)
++#define KT_RSA3072_SPHINCS_HARAKA_128F_ROBUST ((uint64_t)1<<33)
++#define KT_P256_SPHINCS_HARAKA_128F_ROBUST ((uint64_t)1<<34)
++#define KT_RSA3072_SPHINCS_SHA256_128F_ROBUST ((uint64_t)1<<35)
++#define KT_P256_SPHINCS_SHA256_128F_ROBUST ((uint64_t)1<<36)
++#define KT_RSA3072_SPHINCS_SHAKE256_128F_ROBUST ((uint64_t)1<<37)
++#define KT_P256_SPHINCS_SHAKE256_128F_ROBUST ((uint64_t)1<<38)
+ 
+ #define KT_MIN KT_DSA
+ #define KT_MAX KT_P256_SPHINCS_SHAKE256_128F_ROBUST
+@@ -105,7 +102,6 @@
+ int get_cert = 0;
+ uint64_t get_keytypes = KT_RSA|KT_ECDSA|KT_ED25519| \
+ ///// OQS_TEMPLATE_FRAGMENT_GET_KT_START
+-                   KT_OQSDEFAULT| \
+                    KT_DILITHIUM_2| \
+                    KT_FALCON_512| \
+                    KT_MQDSS_31_48| \
+@@ -118,8 +114,6 @@
+                    KT_SPHINCS_HARAKA_128F_ROBUST| \
+                    KT_SPHINCS_SHA256_128F_ROBUST| \
+                    KT_SPHINCS_SHAKE256_128F_ROBUST| \
+-                   KT_RSA3072_OQSDEFAULT| \
+-                   KT_P256_OQSDEFAULT| \
+                    KT_RSA3072_DILITHIUM_2| \
+                    KT_P256_DILITHIUM_2| \
+                    KT_RSA3072_FALCON_512| \
+@@ -807,9 +801,6 @@
+ 					get_keytypes |= KT_XMSS;
+ 					break;
+ ///// OQS_TEMPLATE_FRAGMENT_SWITCH_KT_START
+-				case KEY_OQSDEFAULT:
+-					get_keytypes |= KT_OQSDEFAULT;
+-					break;
+ 				case KEY_DILITHIUM_2:
+ 					get_keytypes |= KT_DILITHIUM_2;
+ 					break;
+@@ -846,12 +837,6 @@
+ 				case KEY_SPHINCS_SHAKE256_128F_ROBUST:
+ 					get_keytypes |= KT_SPHINCS_SHAKE256_128F_ROBUST;
+ 					break;
+-				case KEY_RSA3072_OQSDEFAULT:
+-					get_keytypes |= KT_RSA3072_OQSDEFAULT;
+-					break;
+-				case KEY_P256_OQSDEFAULT:
+-					get_keytypes |= KT_P256_OQSDEFAULT;
+-					break;
+ 				case KEY_RSA3072_DILITHIUM_2:
+ 					get_keytypes |= KT_RSA3072_DILITHIUM_2;
+ 					break;
+--- a/ssh-keysign.c
++++ b/ssh-keysign.c
+@@ -167,7 +167,7 @@
+ 	struct sshbuf *b;
+ 	Options options;
+ ///// OQS_TEMPLATE_FRAGMENT_COUNT_KT_START
+-#define NUM_KEYTYPES 42
++#define NUM_KEYTYPES 39
+ ///// OQS_TEMPLATE_FRAGMENT_COUNT_KT_END
+ 	struct sshkey *keys[NUM_KEYTYPES], *key = NULL;
+ 	struct passwd *pw;
+@@ -193,7 +193,6 @@
+ 	i = 0;
+ 	/* XXX This really needs to read sshd_config for the paths */
+ ///// OQS_TEMPLATE_FRAGMENT_OPEN_KEYFILES_START
+-	key_fd[i++] = open(_PATH_HOST_OQSDEFAULT_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_DILITHIUM_2_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_FALCON_512_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_MQDSS_31_48_KEY_FILE, O_RDONLY);
+@@ -206,8 +205,6 @@
+ 	key_fd[i++] = open(_PATH_HOST_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, O_RDONLY);
+-	key_fd[i++] = open(_PATH_HOST_RSA3072_OQSDEFAULT_KEY_FILE, O_RDONLY);
+-	key_fd[i++] = open(_PATH_HOST_P256_OQSDEFAULT_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_RSA3072_DILITHIUM_2_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_P256_DILITHIUM_2_KEY_FILE, O_RDONLY);
+ 	key_fd[i++] = open(_PATH_HOST_RSA3072_FALCON_512_KEY_FILE, O_RDONLY);
+--- a/ssh-oqs.c
++++ b/ssh-oqs.c
+@@ -19,10 +19,6 @@
+ 	switch (openssh_type)
+ 	{
+ ///// OQS_TEMPLATE_FRAGMENT_OSSH_KT_TO_OQS_METH_START
+-		case KEY_OQSDEFAULT:
+-		case KEY_RSA3072_OQSDEFAULT:
+-		case KEY_P256_OQSDEFAULT:
+-			return OQS_SIG_alg_default;
+ 		case KEY_DILITHIUM_2:
+ 		case KEY_RSA3072_DILITHIUM_2:
+ 		case KEY_P256_DILITHIUM_2:
+--- a/ssh.c
++++ b/ssh.c
+@@ -1388,7 +1388,7 @@
+ 	sensitive_data.keys = NULL;
+ 	if (options.hostbased_authentication) {
+ ///// OQS_TEMPLATE_FRAGMENT_COUNT_KEYS_START
+-		sensitive_data.nkeys = 47;
++		sensitive_data.nkeys = 44;
+ ///// OQS_TEMPLATE_FRAGMENT_COUNT_KEYS_END
+ 		sensitive_data.keys = xcalloc(sensitive_data.nkeys,
+ 		    sizeof(struct sshkey));
+@@ -1418,43 +1418,40 @@
+ 			L_CERT(_PATH_HOST_XMSS_KEY_FILE, 8);
+ 			L_PUBKEY(_PATH_HOST_XMSS_KEY_FILE, 9);
+ ///// OQS_TEMPLATE_FRAGMENT_LOAD_PUBKEYS_START
+-			L_PUBKEY(_PATH_HOST_OQSDEFAULT_KEY_FILE, 10);
+-			L_PUBKEY(_PATH_HOST_DILITHIUM_2_KEY_FILE, 11);
+-			L_PUBKEY(_PATH_HOST_FALCON_512_KEY_FILE, 12);
+-			L_PUBKEY(_PATH_HOST_MQDSS_31_48_KEY_FILE, 13);
+-			L_PUBKEY(_PATH_HOST_PICNIC_L1FS_KEY_FILE, 14);
+-			L_PUBKEY(_PATH_HOST_PICNIC3_L1_KEY_FILE, 15);
+-			L_PUBKEY(_PATH_HOST_QTESLA_P_I_KEY_FILE, 16);
+-			L_PUBKEY(_PATH_HOST_RAINBOW_IA_CLASSIC_KEY_FILE, 17);
+-			L_PUBKEY(_PATH_HOST_RAINBOW_IIIC_CLASSIC_KEY_FILE, 18);
+-			L_PUBKEY(_PATH_HOST_RAINBOW_VC_CLASSIC_KEY_FILE, 19);
+-			L_PUBKEY(_PATH_HOST_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, 20);
+-			L_PUBKEY(_PATH_HOST_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, 21);
+-			L_PUBKEY(_PATH_HOST_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, 22);
+-			L_PUBKEY(_PATH_HOST_RSA3072_OQSDEFAULT_KEY_FILE, 23);
+-			L_PUBKEY(_PATH_HOST_P256_OQSDEFAULT_KEY_FILE, 24);
+-			L_PUBKEY(_PATH_HOST_RSA3072_DILITHIUM_2_KEY_FILE, 25);
+-			L_PUBKEY(_PATH_HOST_P256_DILITHIUM_2_KEY_FILE, 26);
+-			L_PUBKEY(_PATH_HOST_RSA3072_FALCON_512_KEY_FILE, 27);
+-			L_PUBKEY(_PATH_HOST_P256_FALCON_512_KEY_FILE, 28);
+-			L_PUBKEY(_PATH_HOST_RSA3072_MQDSS_31_48_KEY_FILE, 29);
+-			L_PUBKEY(_PATH_HOST_P256_MQDSS_31_48_KEY_FILE, 30);
+-			L_PUBKEY(_PATH_HOST_RSA3072_PICNIC_L1FS_KEY_FILE, 31);
+-			L_PUBKEY(_PATH_HOST_P256_PICNIC_L1FS_KEY_FILE, 32);
+-			L_PUBKEY(_PATH_HOST_RSA3072_PICNIC3_L1_KEY_FILE, 33);
+-			L_PUBKEY(_PATH_HOST_P256_PICNIC3_L1_KEY_FILE, 34);
+-			L_PUBKEY(_PATH_HOST_RSA3072_QTESLA_P_I_KEY_FILE, 35);
+-			L_PUBKEY(_PATH_HOST_P256_QTESLA_P_I_KEY_FILE, 36);
+-			L_PUBKEY(_PATH_HOST_RSA3072_RAINBOW_IA_CLASSIC_KEY_FILE, 37);
+-			L_PUBKEY(_PATH_HOST_P256_RAINBOW_IA_CLASSIC_KEY_FILE, 38);
+-			L_PUBKEY(_PATH_HOST_P384_RAINBOW_IIIC_CLASSIC_KEY_FILE, 39);
+-			L_PUBKEY(_PATH_HOST_P521_RAINBOW_VC_CLASSIC_KEY_FILE, 40);
+-			L_PUBKEY(_PATH_HOST_RSA3072_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, 41);
+-			L_PUBKEY(_PATH_HOST_P256_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, 42);
+-			L_PUBKEY(_PATH_HOST_RSA3072_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, 43);
+-			L_PUBKEY(_PATH_HOST_P256_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, 44);
+-			L_PUBKEY(_PATH_HOST_RSA3072_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, 45);
+-			L_PUBKEY(_PATH_HOST_P256_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, 46);
++			L_PUBKEY(_PATH_HOST_DILITHIUM_2_KEY_FILE, 10);
++			L_PUBKEY(_PATH_HOST_FALCON_512_KEY_FILE, 11);
++			L_PUBKEY(_PATH_HOST_MQDSS_31_48_KEY_FILE, 12);
++			L_PUBKEY(_PATH_HOST_PICNIC_L1FS_KEY_FILE, 13);
++			L_PUBKEY(_PATH_HOST_PICNIC3_L1_KEY_FILE, 14);
++			L_PUBKEY(_PATH_HOST_QTESLA_P_I_KEY_FILE, 15);
++			L_PUBKEY(_PATH_HOST_RAINBOW_IA_CLASSIC_KEY_FILE, 16);
++			L_PUBKEY(_PATH_HOST_RAINBOW_IIIC_CLASSIC_KEY_FILE, 17);
++			L_PUBKEY(_PATH_HOST_RAINBOW_VC_CLASSIC_KEY_FILE, 18);
++			L_PUBKEY(_PATH_HOST_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, 19);
++			L_PUBKEY(_PATH_HOST_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, 20);
++			L_PUBKEY(_PATH_HOST_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, 21);
++			L_PUBKEY(_PATH_HOST_RSA3072_DILITHIUM_2_KEY_FILE, 22);
++			L_PUBKEY(_PATH_HOST_P256_DILITHIUM_2_KEY_FILE, 23);
++			L_PUBKEY(_PATH_HOST_RSA3072_FALCON_512_KEY_FILE, 24);
++			L_PUBKEY(_PATH_HOST_P256_FALCON_512_KEY_FILE, 25);
++			L_PUBKEY(_PATH_HOST_RSA3072_MQDSS_31_48_KEY_FILE, 26);
++			L_PUBKEY(_PATH_HOST_P256_MQDSS_31_48_KEY_FILE, 27);
++			L_PUBKEY(_PATH_HOST_RSA3072_PICNIC_L1FS_KEY_FILE, 28);
++			L_PUBKEY(_PATH_HOST_P256_PICNIC_L1FS_KEY_FILE, 29);
++			L_PUBKEY(_PATH_HOST_RSA3072_PICNIC3_L1_KEY_FILE, 30);
++			L_PUBKEY(_PATH_HOST_P256_PICNIC3_L1_KEY_FILE, 31);
++			L_PUBKEY(_PATH_HOST_RSA3072_QTESLA_P_I_KEY_FILE, 32);
++			L_PUBKEY(_PATH_HOST_P256_QTESLA_P_I_KEY_FILE, 33);
++			L_PUBKEY(_PATH_HOST_RSA3072_RAINBOW_IA_CLASSIC_KEY_FILE, 34);
++			L_PUBKEY(_PATH_HOST_P256_RAINBOW_IA_CLASSIC_KEY_FILE, 35);
++			L_PUBKEY(_PATH_HOST_P384_RAINBOW_IIIC_CLASSIC_KEY_FILE, 36);
++			L_PUBKEY(_PATH_HOST_P521_RAINBOW_VC_CLASSIC_KEY_FILE, 37);
++			L_PUBKEY(_PATH_HOST_RSA3072_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, 38);
++			L_PUBKEY(_PATH_HOST_P256_SPHINCS_HARAKA_128F_ROBUST_KEY_FILE, 39);
++			L_PUBKEY(_PATH_HOST_RSA3072_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, 40);
++			L_PUBKEY(_PATH_HOST_P256_SPHINCS_SHA256_128F_ROBUST_KEY_FILE, 41);
++			L_PUBKEY(_PATH_HOST_RSA3072_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, 42);
++			L_PUBKEY(_PATH_HOST_P256_SPHINCS_SHAKE256_128F_ROBUST_KEY_FILE, 43);
+ ///// OQS_TEMPLATE_FRAGMENT_LOAD_PUBKEYS_END
+ 		}
+ 	}
+--- a/ssh2.h
++++ b/ssh2.h
+@@ -108,8 +108,6 @@
+ #define SSH2_MSG_KEX_ECDH_REPLY				31
+ 
+ /* PQ-only */
+-#define SSH2_MSG_PQ_OQSDEFAULT_INIT			30
+-#define SSH2_MSG_PQ_OQSDEFAULT_REPLY		31
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_PQ_KEX_MARKERS_START
+ #define SSH2_MSG_PQ_BIKE_INIT    30
+ #define SSH2_MSG_PQ_BIKE_REPLY   31
+@@ -146,8 +144,6 @@
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_PQ_KEX_MARKERS_END
+ 
+ /* hybrid */
+-#define SSH2_MSG_HY_ECDH_OQSDEFAULT_INIT		30
+-#define SSH2_MSG_HY_ECDH_OQSDEFAULT_REPLY		31
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_ASSIGN_HYBRID_KEX_MARKERS_START
+ #define SSH2_MSG_HY_ECDH_BIKE_INIT    30
+--- a/sshconnect.c
++++ b/sshconnect.c
+@@ -1464,7 +1464,6 @@
+ 		KEY_ED25519,
+ 		KEY_XMSS,
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_KT_START
+-		KEY_OQSDEFAULT,
+ 		KEY_DILITHIUM_2,
+ 		KEY_FALCON_512,
+ 		KEY_MQDSS_31_48,
+@@ -1477,8 +1476,6 @@
+ 		KEY_SPHINCS_HARAKA_128F_ROBUST,
+ 		KEY_SPHINCS_SHA256_128F_ROBUST,
+ 		KEY_SPHINCS_SHAKE256_128F_ROBUST,
+-		KEY_RSA3072_OQSDEFAULT,
+-		KEY_P256_OQSDEFAULT,
+ 		KEY_RSA3072_DILITHIUM_2,
+ 		KEY_P256_DILITHIUM_2,
+ 		KEY_RSA3072_FALCON_512,
+--- a/sshkey.c
++++ b/sshkey.c
+@@ -127,7 +127,6 @@
+ #endif /* WITH_XMSS */
+ #ifdef WITH_PQ_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_PQ_KT_START
+-	{ "ssh-oqsdefault", "OQSDEFAULT", NULL, KEY_OQSDEFAULT, 0, 0, 0 },
+ 	{ "ssh-dilithium2", "DILITHIUM2", NULL, KEY_DILITHIUM_2, 0, 0, 0 },
+ 	{ "ssh-falcon512", "FALCON512", NULL, KEY_FALCON_512, 0, 0, 0 },
+ 	{ "ssh-mqdss3148", "MQDSS3148", NULL, KEY_MQDSS_31_48, 0, 0, 0 },
+@@ -144,8 +143,6 @@
+ #endif /* WITH_PQ_AUTH */
+ #ifdef WITH_HYBRID_AUTH
+ ///// OQS_TEMPLATE_FRAGMENT_ADD_HYBRID_KT_START
+-	{ "ssh-rsa3072-oqsdefault", "RSA3072_OQSDEFAULT", NULL, KEY_RSA3072_OQSDEFAULT, 0, 0, 0 },
+-	{ "ssh-p256-oqsdefault", "P256_OQSDEFAULT", NULL, KEY_P256_OQSDEFAULT, NID_X9_62_prime256v1, 0, 0 },
+ 	{ "ssh-rsa3072-dilithium2", "RSA3072_DILITHIUM2", NULL, KEY_RSA3072_DILITHIUM_2, 0, 0, 0 },
+ 	{ "ssh-p256-dilithium2", "P256_DILITHIUM2", NULL, KEY_P256_DILITHIUM_2, NID_X9_62_prime256v1, 0, 0 },
+ 	{ "ssh-rsa3072-falcon512", "RSA3072_FALCON512", NULL, KEY_RSA3072_FALCON_512, 0, 0, 0 },
+--- a/sshkey.h
++++ b/sshkey.h
+@@ -71,7 +71,6 @@
+ 	KEY_XMSS,
+ 	KEY_XMSS_CERT,
+ ///// OQS_TEMPLATE_FRAGMENT_ENUM_KT_START
+-	KEY_OQSDEFAULT,
+ 	KEY_DILITHIUM_2,
+ 	KEY_FALCON_512,
+ 	KEY_MQDSS_31_48,
+@@ -84,8 +83,6 @@
+ 	KEY_SPHINCS_HARAKA_128F_ROBUST,
+ 	KEY_SPHINCS_SHA256_128F_ROBUST,
+ 	KEY_SPHINCS_SHAKE256_128F_ROBUST,
+-	KEY_RSA3072_OQSDEFAULT,
+-	KEY_P256_OQSDEFAULT,
+ 	KEY_RSA3072_DILITHIUM_2,
+ 	KEY_P256_DILITHIUM_2,
+ 	KEY_RSA3072_FALCON_512,
+--- a/myproposal.h
++++ b/myproposal.h
+@@ -168,7 +168,6 @@
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_PQ_KEXS_START
+ #define KEX_PQ_METHODS \
+-    PQ_OQS_KEX_METHOD("oqsdefault-sha384") \
+     KEX_PQ_METHOD_BIKE \
+     KEX_PQ_METHOD_CLASSIC_MCELIECE \
+     KEX_PQ_METHOD_FRODO \
+@@ -323,7 +322,6 @@
+ 
+ ///// OQS_TEMPLATE_FRAGMENT_LIST_HYBRID_KEXS_START
+ #define KEX_HYBRID_METHODS \
+-    HYBRID_ECDH_OQS_METHOD("ecdh-nistp384-oqsdefault-sha384") \
+     KEX_HYBRID_METHOD_BIKE \
+     KEX_HYBRID_METHOD_CLASSIC_MCELIECE \
+     KEX_HYBRID_METHOD_FRODO \
+--- a/configure.ac
++++ b/configure.ac
+@@ -3807,7 +3807,6 @@
+ 			], [AC_MSG_RESULT([no])
+ 	])
+ 
+-
+ 	AC_MSG_CHECKING([for libOQS DILITHIUM support])
+ 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+ 				#include <oqs/oqs.h>

@@ -1,0 +1,8 @@
+# openssh-server/password-authentication is preseeding-only, at least for now.
+openssh source: untranslatable-debconf-templates openssh-server.templates: 20
+
+# pre-release draft of ietf document
+openssh source: license-problem-non-free-RFC-BCP78 ietf_pre_draft_sike_bike_hybrid_kex.txt
+
+# reference to the above file
+openssh source: license-problem-non-free-RFC-BCP78 debian/patches/oqs.patch

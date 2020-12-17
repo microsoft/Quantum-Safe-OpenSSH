@@ -1,0 +1,6 @@
+{%- for kem in config['kems'] %}
+    {%- for variant in kem['variants'] %}
+#define KEX_ECDH_NISTP384_{{ variant['name'] }}_SHA384 HYBRID_ECDH_OQS_KEX_SUFFIX("ecdh-nistp384-{{ variant['name']|lower|replace('_','-') }}-sha384")
+    {%- endfor %}
+{%- endfor %}
+
